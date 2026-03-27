@@ -14,6 +14,20 @@ CYAN='\033[36;1m'
 NC='\033[0m'
 
 # ==========================================
+# DEFESA EXECUTIVA: PRE-FLIGHT SHELL (VERIFICAÇÃO ROOT)
+# Se o script falhar os acessos a meio da sessão, corrói o ataque. Ancoramos logo!
+# ==========================================
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}[!] ALERTA CRÍTICO DE SISTEMA: Bloqueio de Execução.${NC}"
+    echo -e "${YELLOW}[!] O 'Deadshot Tools' necessita de rodar num Kernel Clandestino (Root).${NC}"
+    echo -e "${GREEN}[+] Sintaxe de Inicialização Correta: sudo ./deadshot.sh${NC}"
+    exit 1
+fi
+
+# Variável Global de Armazenamento do Interface Físico
+ORIGINAL_MAC_IFACE=""
+
+# ==========================================
 # SPLASH SCREEN (DEADSHOT ASCII ART TACTICAL)
 # ==========================================
 ascii_banner() {
@@ -31,6 +45,33 @@ ascii_banner() {
     echo -e "${CYAN}            +---------------------------------------+${NC}"
     echo ""
     sleep 2
+}
+
+# ==========================================
+# DESMANTELAMENTO (TEAR-DOWN) & RESTAURAÇÃO DE IDENTIDADE
+# ==========================================
+abort_protocol() {
+    clear
+    echo -e "${YELLOW}[!] A INICIAR DESMANTELAMENTO DE CIBER-OPERAÇÕES...${NC}"
+    
+    # 1. Parar Túneis Tor Ativos em Background
+    if command -v tor >/dev/null; then
+        echo -e "${MAGENTA}[*] A desligar Rotas Secundárias (Tear-down Node Tor)...${NC}"
+        sudo service tor stop >/dev/null 2>&1
+    fi
+
+    # 2. Restaurar o Hardware da Placa de Rede para não quebrar a máquina permanentemente
+    if [ -n "$ORIGINAL_MAC_IFACE" ]; then
+        if command -v macchanger >/dev/null; then
+            echo -e "${MAGENTA}[*] A restaurar ID Original de Hardware ($ORIGINAL_MAC_IFACE)...${NC}"
+            sudo ip link set dev "$ORIGINAL_MAC_IFACE" down
+            sudo macchanger -p "$ORIGINAL_MAC_IFACE" >/dev/null 2>&1
+            sudo ip link set dev "$ORIGINAL_MAC_IFACE" up
+        fi
+    fi
+    
+    echo -e "${GREEN}[*] 100% LIMPO. Os teus rastos sumiram no éter. Deadshot Terminado.${NC}"
+    exit 0
 }
 
 # ==========================================
@@ -59,6 +100,7 @@ ghost_mode() {
     # Detetar Interface e Executar Spoofing
     IFACE=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $5}' | head -n 1)
     if [ -n "$IFACE" ]; then
+        ORIGINAL_MAC_IFACE="$IFACE" # Guardar fisicamente para Restauro ao sair
         if command -v macchanger >/dev/null; then
             echo -e "${YELLOW}[!] O MAC Address original na interface $IFACE vai ser mascarado...${NC}"
             sudo ip link set dev "$IFACE" down
@@ -119,9 +161,31 @@ run_requisitos() {
     clear
     echo -e "${MAGENTA}[*] A instalar todos os pacotes estruturais na máquina...${NC}"
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y git python3 python3-pip curl php tor ruby nmap amass nuclei hydra ffuf wpscan jq macchanger
+    sudo apt install -y git python3 python3-pip python3-venv curl php tor ruby nmap amass nuclei hydra ffuf wpscan jq macchanger
     echo -e "${GREEN}[+] O teu Linux está blindado com as ferramentas raízes (incluindo JQ e Macchanger)!${NC}"
     pausar
+}
+
+# ==========================================
+# SANITIZAÇÃO E ISOLAMENTO (DEFESA DO KALI LINUX E ANTI-INJECTION)
+# ==========================================
+
+# Limpador de Inputs Maliciosos
+sanitize_input() {
+    local input="$1"
+    if [[ "$input" =~ [;\&\|\$\>\<\`\\] ]]; then
+        return 1 # Input Malicioso Detetado
+    fi
+    return 0 # Limpo
+}
+
+# Criador do Sandboxing Python
+init_virtualenv() {
+    if [ ! -d ".venv_deadshot" ]; then
+        echo -e "${YELLOW}[!] A isolar Ambiente Python (VENV) para não destruir pacotes de Sistema Operativo...${NC}"
+        python3 -m venv .venv_deadshot
+    fi
+    source .venv_deadshot/bin/activate
 }
 
 run_zphisher() {
@@ -140,17 +204,21 @@ run_amass() {
     preparar_ferramenta || return
     echo -e "${MAGENTA}[*] Amass...${NC}"
     read -p "Insira o domínio TARGET corporativo (ex: empresa.com): " dom
+    if ! sanitize_input "$dom"; then echo -e "${RED}[!] Evasão detetada. Input Rejeitado.${NC}"; pausar; return; fi
     if command -v amass >/dev/null; then amass enum -d "$dom"; else echo -e "${RED}[!] Faltam requisitos [Menu 1].${NC}"; fi
     cd ../..; pausar
 }
 
 run_theharvester() {
     preparar_ferramenta || return
+    init_virtualenv
     if [ ! -d "theHarvester" ]; then git clone https://github.com/laramies/theHarvester.git; fi
     cd theHarvester
-    python3 -m pip install -r requirements/base.txt --break-system-packages 2>/dev/null || python3 -m pip install -r requirements/base.txt
+    pip install -r requirements/base.txt 2>/dev/null
     read -p "Domínio alvo (ex: apple.com): " dom
+    if ! sanitize_input "$dom"; then echo -e "${RED}[!] Tentativa de Injeção de Código anulada.${NC}"; deactivate; pausar; return; fi
     python3 theHarvester.py -d "$dom" -b all
+    deactivate
     cd ../..; pausar
 }
 
@@ -159,6 +227,7 @@ run_sqlmap() {
     if [ ! -d "sqlmap-dev" ]; then git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git sqlmap-dev; fi
     cd sqlmap-dev
     read -p "URL com Parâmetro Vulnerável a SQLi (ex: site.com/page.php?id=1): " alvo
+    if ! sanitize_input "$alvo"; then echo -e "${RED}[!] Parâmetro hostil na string.${NC}"; pausar; return; fi
     python3 sqlmap.py -u "$alvo" --dbs --random-agent --batch
     cd ../..; pausar
 }
@@ -169,23 +238,28 @@ run_phoneinfoga() {
     cd PhoneInfoga_App
     if [ ! -f "phoneinfoga" ]; then curl -sSL https://raw.githubusercontent.com/sundowndev/phoneinfoga/master/support/scripts/install | bash; fi
     read -p "N. Telemóvel Alvo (+351...): " phnum
+    if ! sanitize_input "$phnum"; then echo -e "${RED}[!] Alerta de Segurança no Input.${NC}"; pausar; return; fi
     if [ -n "$phnum" ]; then ./phoneinfoga scan -n "$phnum"; fi
     cd ../..; pausar
 }
 
 run_sherlock() {
     preparar_ferramenta || return
+    init_virtualenv
     if [ ! -d "sherlock" ]; then git clone https://github.com/sherlock-project/sherlock.git; fi
     cd sherlock
-    python3 -m pip install -r requirements.txt --break-system-packages 2>/dev/null || python3 -m pip install -r requirements.txt
+    pip install -r requirements.txt 2>/dev/null
     read -p "Username (ID do Alvo): " uname
+    if ! sanitize_input "$uname"; then echo -e "${RED}[!] Command Injection recusa pelo Cérebro.${NC}"; deactivate; pausar; return; fi
     if [ -n "$uname" ]; then python3 sherlock "$uname"; fi
+    deactivate
     cd ../..; pausar
 }
 
 run_nuclei() {
     preparar_ferramenta || return
     read -p "IP/Domínio (https://site.com): " tg
+    if ! sanitize_input "$tg"; then echo -e "${RED}[!] Evasão Falhada. Escreve URLs normais.${NC}"; pausar; return; fi
     if command -v nuclei >/dev/null; then nuclei -u "$tg"; else echo -e "${RED}[!] Requisitos em falta.${NC}"; fi
     cd ../..; pausar
 }
@@ -195,6 +269,7 @@ run_nikto() {
     if [ ! -d "nikto" ]; then git clone https://github.com/sullo/nikto.git; fi
     cd nikto
     read -p "URL Direto do Servidor Clássico Web: " urlt
+    if ! sanitize_input "$urlt"; then echo -e "${RED}[!] Input Ilegal.${NC}"; pausar; return; fi
     perl program/nikto.pl -h "$urlt"
     cd ../..; pausar
 }
@@ -361,6 +436,6 @@ while true; do
         4) menu_bruteforce ;;
         5) menu_social ;;
         6) menu_system ;;
-        0|"") clear; echo -e "${GREEN}[*] Desmantelando Ciber-Operações. Secção Limpa.${NC}"; exit 0 ;;
+        0|"") abort_protocol ;;
     esac
 done
