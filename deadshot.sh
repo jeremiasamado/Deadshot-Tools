@@ -376,10 +376,36 @@ limpeza_sandbox() {
 }
 
 # ==========================================
-# CÉREBRO: DEADSHOT WIZARD & LIVE INTEL
+# CÉREBRO: DEADSHOT WIZARD & LIVE INTEL & AI ORACLE
 # ==========================================
+run_ollama_ai() {
+    clear
+    echo -e "${RED}             [ DEADSHOT AI - RED TEAM ORACLE ]${NC}"
+    echo -e "${YELLOW}[!] A INICIAR CÉREBRO TÁTICO OFFLINE (Sem Filtros Estritos).${NC}"
+    
+    if ! command -v ollama >/dev/null; then
+        echo -e "${RED}[!] Motor 'Ollama' não detetado no teu Kali Linux.${NC}"
+        echo -e "${CYAN}[*] Descarrega o Kernel Neural com: curl -fsSL https://ollama.com/install.sh | sh${NC}"
+        pausar
+        return
+    fi
+    
+    # Iniciar daemon se estiver em baixo (requer sudo systemd em alguns kali)
+    sudo systemctl start ollama 2>/dev/null
+    
+    echo -e "${MAGENTA}[*] A conectar à base neuronal 'Dolphin-Phi' (Modelo tático leve - 1.6GB)...${NC}"
+    echo -e "${GREEN}[+] O Oráculo aguarda o teu comando. (Escreve /bye para sair)${NC}"
+    echo ""
+    ollama run dolphin-phi
+    
+    clear
+    echo -e "${GREEN}[*] Desconexão Neural Concluída. A regressar à Interface Mortífera...${NC}"
+    sleep 1
+}
+
 run_deadshot_ai() {
-    alvo=$(whiptail --title "[ DEADSHOT EXPERT SYSTEM ]" --menu "Conexão cifrada e estabilizada.\nQual é a finalidade principal da Operação de hoje?" 20 75 6 \
+    alvo=$(whiptail --title "[ DEADSHOT EXPERT SYSTEM ]" --menu "Conexão cifrada e estabilizada.\nQual é a finalidade principal da Operação de hoje?" 20 75 7 \
+    "0" "[CÉREBRO] Iniciar Co-Piloto IA (Red Team Oracle)" \
     "1" "Investigar o perfil e dados de uma Identidade/Pessoa" \
     "2" "Invadir a Administração de uma Aplicação Web/Servidor" \
     "3" "Rebentar Palavras-Passe de um Servidor Confidencial" \
@@ -389,6 +415,9 @@ run_deadshot_ai() {
     if [ -z "$alvo" ]; then return; fi
 
     case $alvo in
+        "0")
+            run_ollama_ai
+            ;;
         "1")
             p_dados=$(whiptail --title "[ DEADSHOT WIZARD - OSINT ]" --menu "Para OSINT, que tipo de vestígio tens nas mãos?" 20 75 3 "A" "O seu Número de Telemóvel" "B" "O seu Username favorito" "C" "A Empresa a que pertence" 3>&1 1>&2 2>&3)
             if [ "$p_dados" = "A" ]; then run_phoneinfoga; elif [ "$p_dados" = "B" ]; then run_sherlock; elif [ "$p_dados" = "C" ]; then run_theharvester; fi
