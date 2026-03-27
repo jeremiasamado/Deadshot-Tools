@@ -24,6 +24,9 @@ RED='\033[31;40;1m'
 DARK_GRAY='\033[1;30m'
 NC='\033[0m'
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+TOOLS_DIR="${SCRIPT_DIR}/Tools"
+
 # ==========================================
 # PRE-FLIGHT SYSTEM CHECKS
 # ==========================================
@@ -134,11 +137,11 @@ if ! command -v whiptail >/dev/null; then
     sudo apt-get install whiptail -y >/dev/null 2>&1
 fi
 
-mkdir -p Tools
+mkdir -p "$TOOLS_DIR"
 
 prepare_tools_dir() {
     clear
-    if ! cd Tools; then
+    if ! cd "$TOOLS_DIR"; then
         echo -e "${RED}[!] Critical error: Tools directory unavailable.${NC}"
         sleep 2
         return 1
@@ -147,6 +150,7 @@ prepare_tools_dir() {
 }
 
 pause_menu() {
+    cd "$SCRIPT_DIR" || exit
     echo ""
     read -p "Press [ENTER] to return to main menu..."
 }
@@ -177,21 +181,21 @@ sanitize_input() {
 init_virtualenv() {
     if [ ! -d ".venv_deadshot" ]; then
         echo -e "${DARK_GRAY}[*] Initializing isolated Python virtual environment...${NC}"
-        python3 -m venv .venv_deadshot
+        python3 -m venv ".venv_deadshot"
     fi
-    source .venv_deadshot/bin/activate
+    source ".venv_deadshot/bin/activate"
 }
 
 run_zphisher() {
     prepare_tools_dir || return
     if [ ! -d "zphisher" ]; then git clone https://github.com/htr-tech/zphisher; fi
-    cd zphisher && bash zphisher.sh; cd ../..
+    cd zphisher && bash zphisher.sh; pause_menu
 }
 
 run_camphish() {
     prepare_tools_dir || return
     if [ ! -d "CamPhish" ]; then git clone https://github.com/techchipnet/CamPhish; fi
-    cd CamPhish && bash camphish.sh; cd ../..
+    cd CamPhish && bash camphish.sh; pause_menu
 }
 
 run_amass() {
@@ -199,7 +203,7 @@ run_amass() {
     read -p "Target Domain (e.g., example.com): " dom
     if ! sanitize_input "$dom"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     if command -v amass >/dev/null; then amass enum -d "$dom"; else echo -e "${RED}[!] Amass not found.${NC}"; fi
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_theharvester() {
@@ -212,7 +216,7 @@ run_theharvester() {
     if ! sanitize_input "$dom"; then echo -e "${RED}[!] Invalid input.${NC}"; deactivate; pause_menu; return; fi
     python3 theHarvester.py -d "$dom" -b all
     deactivate
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_sqlmap() {
@@ -222,7 +226,7 @@ run_sqlmap() {
     read -p "Target URL with parameter (e.g., example.com/page.php?id=1): " alvo
     if ! sanitize_input "$alvo"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     python3 sqlmap.py -u "$alvo" --dbs --random-agent --batch
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_phoneinfoga() {
@@ -233,7 +237,7 @@ run_phoneinfoga() {
     read -p "Target Phone Number (+123...): " phnum
     if ! sanitize_input "$phnum"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     if [ -n "$phnum" ]; then ./phoneinfoga scan -n "$phnum"; fi
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_sherlock() {
@@ -246,7 +250,7 @@ run_sherlock() {
     if ! sanitize_input "$uname"; then echo -e "${RED}[!] Invalid input.${NC}"; deactivate; pause_menu; return; fi
     if [ -n "$uname" ]; then python3 sherlock "$uname"; fi
     deactivate
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_nuclei() {
@@ -254,7 +258,7 @@ run_nuclei() {
     read -p "Target IP/Domain (https://example.com): " tg
     if ! sanitize_input "$tg"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     if command -v nuclei >/dev/null; then nuclei -u "$tg"; else echo -e "${RED}[!] Nuclei not found.${NC}"; fi
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_nikto() {
@@ -264,14 +268,14 @@ run_nikto() {
     read -p "Target Web Server URL: " urlt
     if ! sanitize_input "$urlt"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     perl program/nikto.pl -h "$urlt"
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_wpscan() {
     prepare_tools_dir || return
     read -p "Target WordPress URL: " wp_url
     if command -v wpscan >/dev/null; then wpscan --url "$wp_url" --enumerate u,vp,vt; else echo -e "${RED}[!] WPScan not found.${NC}"; fi
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_rustscan() {
@@ -282,7 +286,7 @@ run_rustscan() {
     fi
     read -p "Target IP for fast scanning: " t_ip
     rustscan -a "$t_ip" -- -A -sC
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_hydra() {
@@ -291,7 +295,7 @@ run_hydra() {
     read -p "Target User: " usr
     read -p "Target Protocol & URL (e.g., ssh://192.168.1.1): " target_f
     if command -v hydra >/dev/null; then hydra -l "$usr" -P "$wordl" "$target_f"; else echo -e "${RED}[!] Hydra not found.${NC}"; fi
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_ffuf() {
@@ -299,7 +303,7 @@ run_ffuf() {
     read -p "Target URL ending with FUZZ (e.g., http://example.com/FUZZ): " fz_site
     read -p "Directory wordlist path: " dir_w
     if command -v ffuf >/dev/null; then ffuf -w "$dir_w" -u "$fz_site" -c; else echo -e "${RED}[!] Ffuf not found.${NC}"; fi
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_seeker() {
@@ -308,7 +312,7 @@ run_seeker() {
     cd seeker
     bash install.sh
     python3 seeker.py
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_torproxy() {
@@ -317,7 +321,7 @@ run_torproxy() {
     cd Auto_Tor_IP_changer
     sudo python3 install.py
     aut
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_netexec() {
@@ -332,7 +336,7 @@ run_netexec() {
         echo -e "${DARK_GRAY}[*] Initiating SMB scanning...${NC}"
         netexec smb "$tg_smb"
     fi
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_sliver() {
@@ -347,7 +351,7 @@ run_sliver() {
     fi
     echo -e "${DARK_GRAY}[*] Loading Sliver Server...${NC}"
     ./sliver-server
-    cd ../..; pause_menu
+    pause_menu
 }
 
 run_metasploit() {
@@ -358,13 +362,18 @@ run_metasploit() {
     else
         echo -e "${RED}[!] Metasploit not found. Install requirements.${NC}"
     fi
-    cd ../..; pause_menu
+    pause_menu
 }
 
 clean_tools_dir() {
     clear
-    rm -rf Tools/ && mkdir -p Tools
-    echo -e "${DARK_GRAY}[+] Tools directory purged.${NC}"
+    if [ -d "$TOOLS_DIR" ] && [ "$TOOLS_DIR" = "${SCRIPT_DIR}/Tools" ]; then
+        rm -rf "$TOOLS_DIR"
+        mkdir -p "$TOOLS_DIR"
+        echo -e "${DARK_GRAY}[+] Tools directory purged safely.${NC}"
+    else
+        echo -e "${RED}[!] Critical error: invalid tools directory path.${NC}"
+    fi
     pause_menu
 }
 
@@ -392,7 +401,7 @@ run_ai_assistant() {
     
     clear
     echo -e "${DARK_GRAY}[*] AI Assistant terminated. Returning to framework.${NC}"
-    sleep 1
+    pause_menu
 }
 
 run_live_intel() {

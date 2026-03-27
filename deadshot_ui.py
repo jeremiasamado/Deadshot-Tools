@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Header, Footer, ListView, ListItem, Label
@@ -148,9 +149,12 @@ class DeadshotUI(App):
             
             # Suspend the cool UI to drop back to the standard bash hacker terminal
             with self.suspend():
-                os.system("clear")
+                subprocess.run(["clear"], check=False)
                 print(f"\033[31;40;1m[!] ARMING MODULE:\033[0m {tool_name}")
-                os.system(f"sudo ./deadshot.sh {bash_cmd}")
+                try:
+                    subprocess.run(["sudo", "./deadshot.sh", bash_cmd], check=True)
+                except subprocess.CalledProcessError:
+                    print(f"\033[1;30m[*] Tactic interrupted or failed.\033[0m")
             
             # Re-focus the menu when Bash returns
             self.query_one("#categories").focus()
