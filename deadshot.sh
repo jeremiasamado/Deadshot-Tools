@@ -125,7 +125,9 @@ anti_forensics() {
     sleep 2
 }
 
-anti_forensics
+if [ -z "$DEADSHOT_OPSEC" ]; then
+    anti_forensics
+fi
 
 if ! command -v whiptail >/dev/null; then
     sudo apt-get update >/dev/null 2>&1
@@ -416,88 +418,23 @@ run_live_intel() {
     pause_menu
 }
 
-run_ai_hub() {
-    alvo=$(whiptail --title "[ DEADSHOT AI & INTEL ]" --menu "Select operation:" 20 75 7 \
-    "1" "Local AI Assistant (Ollama)" \
-    "2" "Live Vulnerability Intel" \
-    "3" "OSINT & Identity Footprinting" \
-    "4" "Web Application Scanning" \
-    "5" "Protocol Bruteforcing" \
-    "0" "<< Return" 3>&1 1>&2 2>&3)
-
-    if [ -z "$alvo" ]; then return; fi
-
-    case $alvo in
-        "1") run_ai_assistant ;;
-        "2") run_live_intel ;;
-        "3")
-            p_dados=$(whiptail --title "[ OSINT HUB ]" --menu "Select target type:" 20 75 3 "A" "Phone Number" "B" "Username" "C" "Corporate Domain" 3>&1 1>&2 2>&3)
-            if [ "$p_dados" = "A" ]; then run_phoneinfoga; elif [ "$p_dados" = "B" ]; then run_sherlock; elif [ "$p_dados" = "C" ]; then run_theharvester; fi
-            ;;
-        "4")
-            s_dados=$(whiptail --title "[ WEB SCANNERS ]" --menu "Select tactic:" 20 75 4 "A" "Fuzz web directories" "B" "Scan WordPress instances" "C" "Automated SQLi Extraction" "D" "Nuclei Template Scanning" 3>&1 1>&2 2>&3)
-            if [ "$s_dados" = "A" ]; then run_ffuf; elif [ "$s_dados" = "B" ]; then run_wpscan; elif [ "$s_dados" = "C" ]; then run_sqlmap; elif [ "$s_dados" = "D" ]; then run_nuclei; fi
-            ;;
-        "5")
-            whiptail --title "[ BRUTEFORCE ]" --msgbox "Using THC-Hydra for remote protocol bruteforcing." 10 70
-            run_hydra
-            ;;
-        "0") return ;;
-    esac
-}
-
 # ==========================================
-# MENUS
+# TEXTUAL UI DISPATCHER (FRONT-END INIT)
 # ==========================================
-menu_osint() {
-    CHOICE=$(whiptail --title "[ OSINT PROTOCOL ]" --menu "Select specific tool:" 20 70 5 "1" "Amass (Subdomain Mapping)" "2" "TheHarvester (Metadata Extraction)" "3" "PhoneInfoga (Phone Intelligence)" "4" "Sherlock (Username Tracking)" "0" "<< Return" 3>&1 1>&2 2>&3)
-    case $CHOICE in 1) run_amass ;; 2) run_theharvester ;; 3) run_phoneinfoga ;; 4) run_sherlock ;; esac
-}
+if [ -n "$1" ]; then
+    # Function directly called by the Python Dashboard
+    "$1" "${@:2}"
+    exit 0
+fi
 
-menu_web() {
-    CHOICE=$(whiptail --title "[ WEB EXPLOITATION ]" --menu "Select specific tool:" 20 70 5 "1" "SQLMap" "2" "Nuclei" "3" "Nikto" "4" "WPScan" "0" "<< Return" 3>&1 1>&2 2>&3)
-    case $CHOICE in 1) run_sqlmap ;; 2) run_nuclei ;; 3) run_nikto ;; 4) run_wpscan ;; esac
-}
+# Initializing the Master Dashboard
+init_virtualenv
+if ! python3 -c "import textual" &>/dev/null; then
+    clear
+    echo -e "${DARK_GRAY}[*] Bootstrapping UI visual dependencies (Textual TUI)...${NC}"
+    pip install textual 2>/dev/null
+fi
 
-menu_bruteforce() {
-    CHOICE=$(whiptail --title "[ PORT EXPLOITATION ]" --menu "Select specific tool:" 20 70 4 "1" "RustScan (Fast Port Scanning)" "2" "THC-Hydra (Protocol Bruteforce)" "3" "Ffuf (Directory Fuzzing)" "0" "<< Return" 3>&1 1>&2 2>&3)
-    case $CHOICE in 1) run_rustscan ;; 2) run_hydra ;; 3) run_ffuf ;; esac
-}
-
-menu_post_exploitation() {
-    CHOICE=$(whiptail --title "[ POST-EXPLOITATION & C2 ]" --menu "Select framework:" 20 70 4 "1" "NetExec (AD/Windows Mapping)" "2" "Sliver (C2 Implants)" "3" "Metasploit Console" "0" "<< Return" 3>&1 1>&2 2>&3)
-    case $CHOICE in 1) run_netexec ;; 2) run_sliver ;; 3) run_metasploit ;; esac
-}
-
-menu_social() {
-    CHOICE=$(whiptail --title "[ SOCIAL ENGINEERING ]" --menu "Select specific tool:" 20 70 5 "1" "Zphisher (Phishing Pages)" "2" "Camphish (Webcam Capture)" "3" "Seeker (GPS Tracking)" "4" "Auto-Tor IP Changer" "0" "<< Return" 3>&1 1>&2 2>&3)
-    case $CHOICE in 1) run_zphisher ;; 2) run_camphish ;; 3) run_seeker ;; 4) run_torproxy ;; esac
-}
-
-menu_system() {
-    CHOICE=$(whiptail --title "[ SYSTEM ROOT ]" --menu "Base operations:" 20 70 4 "1" "Install Core Dependencies" "2" "Purge Tools Directory" "0" "<< Return" 3>&1 1>&2 2>&3)
-    case $CHOICE in 1) run_requisitos ;; 2) clean_tools_dir ;; esac
-}
-
-while true; do
-    MAIN=$(whiptail --title "[ DEADSHOT TOOLS V7 ]" --menu "Select Operation Phase:" 20 80 8 \
-    "1" "[ Phase 0 ] AI Assistant & Live Intel" \
-    "2" "[ Phase 1 ] OSINT & Footprinting" \
-    "3" "[ Phase 2 ] Web Application Scanners" \
-    "4" "[ Phase 3 ] External Services & Bruteforce" \
-    "5" "[ Phase 4 ] Post-Exploitation & C2" \
-    "6" "[ Phase 5 ] Social Engineering" \
-    "7" "[ Config ] Core Dependencies & Cleanup" \
-    "0" ">> Exit Framework" 3>&1 1>&2 2>&3)
-
-    case $MAIN in
-        1) run_ai_hub ;;
-        2) menu_osint ;;
-        3) menu_web ;;
-        4) menu_bruteforce ;;
-        5) menu_post_exploitation ;;
-        6) menu_social ;;
-        7) menu_system ;;
-        0|"") clean_exit ;;
-    esac
-done
+export DEADSHOT_OPSEC=1 # Ensure child processes bypass OPSEC reset latency
+python3 deadshot_ui.py
+clean_exit
