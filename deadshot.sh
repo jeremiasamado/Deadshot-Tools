@@ -95,12 +95,6 @@ clean_exit() {
     echo -e "${DARK_GRAY}[*] Scrubbing host syslog / auth traces...${NC}"
     sudo sed -i '/deadshot/d' /var/log/auth.log 2>/dev/null
     sudo sed -i '/deadshot/d' /var/log/syslog 2>/dev/null
-    
-    # Destroys the volatile tmpfs RAM mount
-    if mountpoint -q "$TOOLS_DIR"; then
-        sudo umount "$TOOLS_DIR" 2>/dev/null
-    fi
-    
     echo -e "${DARK_GRAY}[+] Operations concluded cleanly. Exit.${NC}"
     exit 0
 }
@@ -160,10 +154,6 @@ if ! command -v whiptail >/dev/null; then
 fi
 
 mkdir -p "$TOOLS_DIR"
-# Force mounting Tools as RAM disk
-if ! mountpoint -q "$TOOLS_DIR"; then
-    sudo mount -t tmpfs -o size=2G tmpfs "$TOOLS_DIR" 2>/dev/null
-fi
 
 prepare_tools_dir() {
     clear
