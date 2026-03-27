@@ -39,7 +39,7 @@ ascii_banner() {
     echo ' / /_/ / /___/ ___ |/ /_/ /___/ / __  / /_/ / / /    '
     echo '/_____/_____/_/  |_/_____//____/_/ /_/\____/ /_/     '
     echo ""
-    echo -e "${CYAN}             [ T A C T I C A L   T O O L S   V 5 ]${NC}"
+    echo -e "${CYAN}             [ T A C T I C A L   T O O L S   V 6 ]${NC}"
     echo -e "${CYAN}            +---------------------------------------+${NC}"
     echo -e "${CYAN}            |        B L A C K   O P S   A I        |${NC}"
     echo -e "${CYAN}            +---------------------------------------+${NC}"
@@ -161,7 +161,7 @@ run_requisitos() {
     clear
     echo -e "${MAGENTA}[*] A instalar todos os pacotes estruturais na máquina...${NC}"
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y git python3 python3-pip python3-venv curl php tor ruby nmap amass nuclei hydra ffuf wpscan jq macchanger
+    sudo apt install -y git python3 python3-pip python3-venv pipx metasploit-framework curl php tor ruby nmap amass nuclei hydra ffuf wpscan jq macchanger
     echo -e "${GREEN}[+] O teu Linux está blindado com as ferramentas raízes (incluindo JQ e Macchanger)!${NC}"
     pausar
 }
@@ -173,7 +173,7 @@ run_requisitos() {
 # Limpador de Inputs Maliciosos
 sanitize_input() {
     local input="$1"
-    if [[ "$input" =~ [;\&\|\$\>\<\`\\] ]]; then
+    if [[ "$input" == *[';&|$\><`\']* ]]; then
         return 1 # Input Malicioso Detetado
     fi
     return 0 # Limpo
@@ -327,6 +327,47 @@ run_torproxy() {
     cd ../..; pausar
 }
 
+run_netexec() {
+    preparar_ferramenta || return
+    if ! command -v netexec >/dev/null; then
+        echo -e "${YELLOW}[!] A instalar NetExec via pipx (Isolamento Seguro Num Container Pip)...${NC}"
+        pipx install netexec 2>/dev/null || sudo apt install -y netexec
+    fi
+    read -p "Alvo/Rede Windows (ex: 192.168.1.0/24, DomainController IP): " tg_smb
+    if ! sanitize_input "$tg_smb"; then echo -e "${RED}[!] Input hostil bloqueado.${NC}"; pausar; return; fi
+    if [ -n "$tg_smb" ]; then
+        echo -e "${MAGENTA}[*] A iniciar varrimento SMB (Null Session & Active Directory Map)...${NC}"
+        netexec smb "$tg_smb"
+    fi
+    cd ../..; pausar
+}
+
+run_sliver() {
+    preparar_ferramenta || return
+    if [ ! -d "sliver" ]; then
+        mkdir sliver; cd sliver
+        echo -e "${YELLOW}[!] A descarregar Framework C2 (Sliver) do BishopFox remotamente...${NC}"
+        curl -sL https://github.com/BishopFox/sliver/releases/latest/download/sliver-server_linux -o sliver-server
+        chmod +x sliver-server
+    else
+        cd sliver
+    fi
+    echo -e "${RED}[!] A INICIAR SERVIDOR DE CONTROLO DE BOTS (SLIVER C2)...${NC}"
+    ./sliver-server
+    cd ../..; pausar
+}
+
+run_metasploit() {
+    preparar_ferramenta || return
+    if command -v msfconsole >/dev/null; then
+        echo -e "${RED}[!] A Engatar Orquestrador Metasploit. Boa caçada.${NC}"
+        msfconsole -q
+    else
+        echo -e "${RED}[!] Metasploit não instalado! Vai ao Menu de Requisitos.${NC}"
+    fi
+    cd ../..; pausar
+}
+
 limpeza_sandbox() {
     clear
     rm -rf Tools/ && mkdir -p Tools
@@ -414,19 +455,25 @@ menu_social() {
     case $CHOICE in 1) run_zphisher ;; 2) run_camphish ;; 3) run_seeker ;; 4) run_torproxy ;; esac
 }
 
+menu_post_exploitation() {
+    CHOICE=$(whiptail --title "[ DOMÍNIO E PÓS-EXPLORAÇÃO (C2) ]" --menu "Ciber-Artilharia Pesada:" 20 70 4 "1" "NetExec (Domínio Ativo Windows & SMB Spray)" "2" "Sliver (Botnets & Implants invisíveis)" "3" "Metasploit (Orquestração Massiva)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
+    case $CHOICE in 1) run_netexec ;; 2) run_sliver ;; 3) run_metasploit ;; esac
+}
+
 menu_system() {
-    CHOICE=$(whiptail --title "[ SYSTEM ROOT ]" --menu "Operações de Base:" 20 70 4 "1" "Auto-Instalar Dependências Core (Nmap, JQ, Go, Pip)" "2" "Purgar o Diretório Secundário (Tools/)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ SYSTEM ROOT ]" --menu "Operações de Base:" 20 70 4 "1" "Auto-Instalar Core (Nmap, PIPX, Metasploit, etc)" "2" "Purgar o Diretório Secundário (Tools/)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_requisitos ;; 2) limpeza_sandbox ;; esac
 }
 
 while true; do
-    MAIN=$(whiptail --title "[ DEADSHOT TOOLS V5 - GHOST PROTOCOL ]" --menu "Sistema Autónomo Armado. Escolha a sua Via Operacional:" 20 80 7 \
+    MAIN=$(whiptail --title "[ DEADSHOT TOOLS V6 - SECURE KERNEL ]" --menu "Sistema Autónomo Armado. Escolha a sua Via Operacional:" 20 80 8 \
     "1" "[SISTEMA EXPERT] Deadshot AI & Intel Dinâmica" \
     "2" "[FASE 1] Inteligência Tática Militar e OSINT" \
     "3" "[FASE 2] Invasões a Aplicações Web (Scanners)" \
     "4" "[FASE 3] Exploração de Portas Livres, Bruteforce" \
-    "5" "[FASE 4] Vetor Físico - GPS Tracker e Fake Links" \
-    "6" "[ROOT] Dependências do Core, Atualizar e Limpar" \
+    "5" "[FASE 4] Domínio e Pós-Exploração (C2 & AD)" \
+    "6" "[FASE 5] Vetor Físico - GPS Tracker e Fake Links" \
+    "7" "[ROOT] Dependências do Core, Atualizar e Limpar" \
     "0" ">> Encerrar SubSistemas Discretamente" 3>&1 1>&2 2>&3)
 
     case $MAIN in
@@ -434,8 +481,9 @@ while true; do
         2) menu_osint ;;
         3) menu_web ;;
         4) menu_bruteforce ;;
-        5) menu_social ;;
-        6) menu_system ;;
+        5) menu_post_exploitation ;;
+        6) menu_social ;;
+        7) menu_system ;;
         0|"") abort_protocol ;;
     esac
 done
