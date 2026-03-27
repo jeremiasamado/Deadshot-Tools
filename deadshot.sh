@@ -1,34 +1,42 @@
 #!/bin/bash
 
 # ==========================================
-# Projeto Base: ALHacking
-# Refatoração Tática: Deadshot Tools (Fase V5)
-# Criador, Desenvolvedor e Arquiteto: NE0SYNC
+# Core Project: Deadshot Tools (V7)
+# Developer: NE0SYNC
 # ==========================================
 
+export NEWT_COLORS='
+    root=,black
+    window=,black
+    border=red,black
+    shadow=,black
+    button=black,red
+    actbutton=white,red
+    compactbutton=black,red
+    title=red,black
+    roottext=white,black
+    textbox=white,black
+    actlistbox=black,red
+    listbox=white,black
+'
+
 RED='\033[31;40;1m'
-GREEN='\033[32;1m'
-YELLOW='\033[33;1m'
-MAGENTA='\033[35;1m'
-CYAN='\033[36;1m'
+DARK_GRAY='\033[1;30m'
 NC='\033[0m'
 
 # ==========================================
-# DEFESA EXECUTIVA: PRE-FLIGHT SHELL (VERIFICAÇÃO ROOT)
-# Se o script falhar os acessos a meio da sessão, corrói o ataque. Ancoramos logo!
+# PRE-FLIGHT SYSTEM CHECKS
 # ==========================================
 if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}[!] ALERTA CRÍTICO DE SISTEMA: Bloqueio de Execução.${NC}"
-    echo -e "${YELLOW}[!] O 'Deadshot Tools' necessita de rodar num Kernel Clandestino (Root).${NC}"
-    echo -e "${GREEN}[+] Sintaxe de Inicialização Correta: sudo ./deadshot.sh${NC}"
+    echo -e "${RED}[!] EXECUTION BLOCKED: Root privileges required.${NC}"
+    echo -e "${DARK_GRAY}[*] Please run the script using: sudo ./deadshot.sh${NC}"
     exit 1
 fi
 
-# Variável Global de Armazenamento do Interface Físico
 ORIGINAL_MAC_IFACE=""
 
 # ==========================================
-# SPLASH SCREEN (DEADSHOT ASCII ART TACTICAL)
+# SPLASH SCREEN
 # ==========================================
 ascii_banner() {
     clear
@@ -39,98 +47,86 @@ ascii_banner() {
     echo ' / /_/ / /___/ ___ |/ /_/ /___/ / __  / /_/ / / /    '
     echo '/_____/_____/_/  |_/_____//____/_/ /_/\____/ /_/     '
     echo ""
-    echo -e "${CYAN}             [ T A C T I C A L   T O O L S   V 6 ]${NC}"
-    echo -e "${CYAN}            +---------------------------------------+${NC}"
-    echo -e "${CYAN}            |        B L A C K   O P S   A I        |${NC}"
-    echo -e "${CYAN}            +---------------------------------------+${NC}"
+    echo -e "${DARK_GRAY}             [ D E A D S H O T   T O O L S   V 7 ]${NC}"
+    echo -e "${DARK_GRAY}            +---------------------------------------+${NC}"
+    echo -e "${DARK_GRAY}            |          S E C U R I T Y   A I        |${NC}"
+    echo -e "${DARK_GRAY}            +---------------------------------------+${NC}"
     echo ""
     sleep 2
 }
 
 # ==========================================
-# DESMANTELAMENTO (TEAR-DOWN) & RESTAURAÇÃO DE IDENTIDADE
+# TEAR-DOWN & CLEANUP
 # ==========================================
-abort_protocol() {
+clean_exit() {
     clear
-    echo -e "${YELLOW}[!] A INICIAR DESMANTELAMENTO DE CIBER-OPERAÇÕES...${NC}"
+    echo -e "${DARK_GRAY}[*] Initiating tear-down sequence...${NC}"
     
-    # 1. Parar Túneis Tor Ativos em Background
     if command -v tor >/dev/null; then
-        echo -e "${MAGENTA}[*] A desligar Rotas Secundárias (Tear-down Node Tor)...${NC}"
+        echo -e "${DARK_GRAY}[*] Stopping Tor proxy service...${NC}"
         sudo service tor stop >/dev/null 2>&1
     fi
 
-    # 2. Restaurar o Hardware da Placa de Rede para não quebrar a máquina permanentemente
     if [ -n "$ORIGINAL_MAC_IFACE" ]; then
         if command -v macchanger >/dev/null; then
-            echo -e "${MAGENTA}[*] A restaurar ID Original de Hardware ($ORIGINAL_MAC_IFACE)...${NC}"
+            echo -e "${DARK_GRAY}[*] Restoring original hardware MAC on $ORIGINAL_MAC_IFACE...${NC}"
             sudo ip link set dev "$ORIGINAL_MAC_IFACE" down
             sudo macchanger -p "$ORIGINAL_MAC_IFACE" >/dev/null 2>&1
             sudo ip link set dev "$ORIGINAL_MAC_IFACE" up
         fi
     fi
     
-    echo -e "${GREEN}[*] 100% LIMPO. Os teus rastos sumiram no éter. Deadshot Terminado.${NC}"
+    echo -e "${DARK_GRAY}[+] Operations concluded cleanly. Exit.${NC}"
     exit 0
 }
 
 # ==========================================
-# GHOST MODE V2 - INICIALIZAÇÃO SEGURA (ANTI-FORENSICS TÁTICO)
+# ANTI-FORENSICS & OPSEC (INITIALIZATION)
 # ==========================================
-ghost_mode() {
+anti_forensics() {
     ascii_banner
-    echo -e "${YELLOW}[!] PROTOCOLO GHOST A INICIAR (Privilégios Administrativos Elevados Exigidos)${NC}"
-    echo -e "${MAGENTA}[*] Identidade, Cache e Interface de Rede vão ser desvinculadas...${NC}"
+    echo -e "${DARK_GRAY}[*] Initializing OPSEC protocols...${NC}"
     sleep 1
     
-    # Anti-Forensics Nível 2: Desligar o Histórico do Bash na Sessão
     export HISTFILE=/dev/null
     unset HISTSIZE
     unset HISTFILESIZE
 
-    # Limpeza de Cache RAM Tática Profunda
     sudo sh -c "echo 3 > /proc/sys/vm/drop_caches" 2>/dev/null
     sudo sh -c "echo 1 > /proc/sys/vm/oom_dump_tasks" 2>/dev/null
     
-    # Destruição Criptográfica de Registos Antigos
     if [ -f ~/.bash_history ]; then
         shred -u ~/.bash_history 2>/dev/null
     fi
     
-    # Detetar Interface e Executar Spoofing
     IFACE=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $5}' | head -n 1)
     if [ -n "$IFACE" ]; then
-        ORIGINAL_MAC_IFACE="$IFACE" # Guardar fisicamente para Restauro ao sair
+        ORIGINAL_MAC_IFACE="$IFACE"
         if command -v macchanger >/dev/null; then
-            echo -e "${YELLOW}[!] O MAC Address original na interface $IFACE vai ser mascarado...${NC}"
+            echo -e "${DARK_GRAY}[*] Spoofing MAC address on interface $IFACE...${NC}"
             sudo ip link set dev "$IFACE" down
             sudo macchanger -r "$IFACE" >/dev/null 2>&1
             sudo ip link set dev "$IFACE" up
-            echo -e "${GREEN}[+] O Identificador da tua máquina (MAC Address) agora é um fantasma neste router!${NC}"
         else
-            echo -e "${RED}[!] Macchanger não encontrado. Recomendo que Vás ao menu e instales as Dependências [Opção 1].${NC}"
+            echo -e "${RED}[!] macchanger not found. Install dependencies via Core Menu.${NC}"
         fi
     else
-        echo -e "${RED}[!] Interface de rede nula (Offline). A ignorar protocolo MAC.${NC}"
+        echo -e "${RED}[!] No external network interface detected. Skipping MAC spoofing.${NC}"
     fi
 
-    # Shield Tor (Proxy SOCKS5 Nível Local)
-    echo -e "${MAGENTA}[*] A invocar Rede Tor Oculta (Proxychains)...${NC}"
+    echo -e "${DARK_GRAY}[*] Starting local Tor tunnel...${NC}"
     if command -v tor >/dev/null; then
         sudo service tor start >/dev/null 2>&1
-        echo -e "${GREEN}[+] Ligação Onion estabelecida com sucesso. Rastreio mitigado.${NC}"
     else
-        echo -e "${RED}[!] Serviço Tor Inexistente. Expões o Teu IP! Instala as Dependências [Opção 1]!${NC}"
+        echo -e "${RED}[!] Tor service missing. Install dependencies via Core Menu.${NC}"
     fi
 
-    echo -e "${GREEN}[*] GHOST MODE [L2] ESTABILIZADO. A Operar Clandestinamente.${NC}"
+    echo -e "${DARK_GRAY}[+] OPSEC setup complete.${NC}"
     sleep 2
 }
 
-# Arranque do escudo antes de invocar menus
-ghost_mode
+anti_forensics
 
-# Instalar whiptail apenas se estritamente necessário para o ecrã carregar
 if ! command -v whiptail >/dev/null; then
     sudo apt-get update >/dev/null 2>&1
     sudo apt-get install whiptail -y >/dev/null 2>&1
@@ -138,381 +134,370 @@ fi
 
 mkdir -p Tools
 
-preparar_ferramenta() {
+prepare_tools_dir() {
     clear
-    echo -e "${MAGENTA}[*] A abrir a Sandbox Operacional...${NC}"
     if ! cd Tools; then
-        echo -e "${RED}[!] Erro crítico: Pasta Tools inacessível.${NC}"
+        echo -e "${RED}[!] Critical error: Tools directory unavailable.${NC}"
         sleep 2
         return 1
     fi
     return 0
 }
 
-pausar() {
+pause_menu() {
     echo ""
-    read -p "Prima [ENTER] para regressar à Central do Deadshot..."
+    read -p "Press [ENTER] to return to main menu..."
 }
 
 # ==========================================
-# BLOCO DAS FERRAMENTAS CLÁSSICAS E DEPENDÊNCIAS
+# CORE DEPENDENCIES
 # ==========================================
 run_requisitos() {
     clear
-    echo -e "${MAGENTA}[*] A instalar todos os pacotes estruturais na máquina...${NC}"
+    echo -e "${DARK_GRAY}[*] Updating system and installing base dependencies...${NC}"
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y git python3 python3-pip python3-venv pipx metasploit-framework curl php tor ruby nmap amass nuclei hydra ffuf wpscan jq macchanger
-    echo -e "${GREEN}[+] O teu Linux está blindado com as ferramentas raízes (incluindo JQ e Macchanger)!${NC}"
-    pausar
+    echo -e "${DARK_GRAY}[+] Core requirements installed.${NC}"
+    pause_menu
 }
 
 # ==========================================
-# SANITIZAÇÃO E ISOLAMENTO (DEFESA DO KALI LINUX E ANTI-INJECTION)
+# INPUT SANITIZATION & PYTHON VENV
 # ==========================================
-
-# Limpador de Inputs Maliciosos
 sanitize_input() {
     local input="$1"
     if [[ "$input" == *[';&|$\><`\']* ]]; then
-        return 1 # Input Malicioso Detetado
+        return 1
     fi
-    return 0 # Limpo
+    return 0
 }
 
-# Criador do Sandboxing Python
 init_virtualenv() {
     if [ ! -d ".venv_deadshot" ]; then
-        echo -e "${YELLOW}[!] A isolar Ambiente Python (VENV) para não destruir pacotes de Sistema Operativo...${NC}"
+        echo -e "${DARK_GRAY}[*] Initializing isolated Python virtual environment...${NC}"
         python3 -m venv .venv_deadshot
     fi
     source .venv_deadshot/bin/activate
 }
 
 run_zphisher() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if [ ! -d "zphisher" ]; then git clone https://github.com/htr-tech/zphisher; fi
     cd zphisher && bash zphisher.sh; cd ../..
 }
 
 run_camphish() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if [ ! -d "CamPhish" ]; then git clone https://github.com/techchipnet/CamPhish; fi
     cd CamPhish && bash camphish.sh; cd ../..
 }
 
 run_amass() {
-    preparar_ferramenta || return
-    echo -e "${MAGENTA}[*] Amass...${NC}"
-    read -p "Insira o domínio TARGET corporativo (ex: empresa.com): " dom
-    if ! sanitize_input "$dom"; then echo -e "${RED}[!] Evasão detetada. Input Rejeitado.${NC}"; pausar; return; fi
-    if command -v amass >/dev/null; then amass enum -d "$dom"; else echo -e "${RED}[!] Faltam requisitos [Menu 1].${NC}"; fi
-    cd ../..; pausar
+    prepare_tools_dir || return
+    read -p "Target Domain (e.g., example.com): " dom
+    if ! sanitize_input "$dom"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
+    if command -v amass >/dev/null; then amass enum -d "$dom"; else echo -e "${RED}[!] Amass not found.${NC}"; fi
+    cd ../..; pause_menu
 }
 
 run_theharvester() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     init_virtualenv
     if [ ! -d "theHarvester" ]; then git clone https://github.com/laramies/theHarvester.git; fi
     cd theHarvester
     pip install -r requirements/base.txt 2>/dev/null
-    read -p "Domínio alvo (ex: apple.com): " dom
-    if ! sanitize_input "$dom"; then echo -e "${RED}[!] Tentativa de Injeção de Código anulada.${NC}"; deactivate; pausar; return; fi
+    read -p "Target Domain (e.g., example.com): " dom
+    if ! sanitize_input "$dom"; then echo -e "${RED}[!] Invalid input.${NC}"; deactivate; pause_menu; return; fi
     python3 theHarvester.py -d "$dom" -b all
     deactivate
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_sqlmap() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if [ ! -d "sqlmap-dev" ]; then git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git sqlmap-dev; fi
     cd sqlmap-dev
-    read -p "URL com Parâmetro Vulnerável a SQLi (ex: site.com/page.php?id=1): " alvo
-    if ! sanitize_input "$alvo"; then echo -e "${RED}[!] Parâmetro hostil na string.${NC}"; pausar; return; fi
+    read -p "Target URL with parameter (e.g., example.com/page.php?id=1): " alvo
+    if ! sanitize_input "$alvo"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     python3 sqlmap.py -u "$alvo" --dbs --random-agent --batch
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_phoneinfoga() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if [ ! -d "PhoneInfoga_App" ]; then mkdir PhoneInfoga_App; fi
     cd PhoneInfoga_App
     if [ ! -f "phoneinfoga" ]; then curl -sSL https://raw.githubusercontent.com/sundowndev/phoneinfoga/master/support/scripts/install | bash; fi
-    read -p "N. Telemóvel Alvo (+351...): " phnum
-    if ! sanitize_input "$phnum"; then echo -e "${RED}[!] Alerta de Segurança no Input.${NC}"; pausar; return; fi
+    read -p "Target Phone Number (+123...): " phnum
+    if ! sanitize_input "$phnum"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     if [ -n "$phnum" ]; then ./phoneinfoga scan -n "$phnum"; fi
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_sherlock() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     init_virtualenv
     if [ ! -d "sherlock" ]; then git clone https://github.com/sherlock-project/sherlock.git; fi
     cd sherlock
     pip install -r requirements.txt 2>/dev/null
-    read -p "Username (ID do Alvo): " uname
-    if ! sanitize_input "$uname"; then echo -e "${RED}[!] Command Injection recusa pelo Cérebro.${NC}"; deactivate; pausar; return; fi
+    read -p "Target Username: " uname
+    if ! sanitize_input "$uname"; then echo -e "${RED}[!] Invalid input.${NC}"; deactivate; pause_menu; return; fi
     if [ -n "$uname" ]; then python3 sherlock "$uname"; fi
     deactivate
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_nuclei() {
-    preparar_ferramenta || return
-    read -p "IP/Domínio (https://site.com): " tg
-    if ! sanitize_input "$tg"; then echo -e "${RED}[!] Evasão Falhada. Escreve URLs normais.${NC}"; pausar; return; fi
-    if command -v nuclei >/dev/null; then nuclei -u "$tg"; else echo -e "${RED}[!] Requisitos em falta.${NC}"; fi
-    cd ../..; pausar
+    prepare_tools_dir || return
+    read -p "Target IP/Domain (https://example.com): " tg
+    if ! sanitize_input "$tg"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
+    if command -v nuclei >/dev/null; then nuclei -u "$tg"; else echo -e "${RED}[!] Nuclei not found.${NC}"; fi
+    cd ../..; pause_menu
 }
 
 run_nikto() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if [ ! -d "nikto" ]; then git clone https://github.com/sullo/nikto.git; fi
     cd nikto
-    read -p "URL Direto do Servidor Clássico Web: " urlt
-    if ! sanitize_input "$urlt"; then echo -e "${RED}[!] Input Ilegal.${NC}"; pausar; return; fi
+    read -p "Target Web Server URL: " urlt
+    if ! sanitize_input "$urlt"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     perl program/nikto.pl -h "$urlt"
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_wpscan() {
-    preparar_ferramenta || return
-    read -p "URL WordPress (ex: https://blog-empresa.com): " wp_url
-    if command -v wpscan >/dev/null; then wpscan --url "$wp_url" --enumerate u,vp,vt; else echo -e "${RED}[!] Efetua antes a Instalação Global [1].${NC}"; fi
-    cd ../..; pausar
+    prepare_tools_dir || return
+    read -p "Target WordPress URL: " wp_url
+    if command -v wpscan >/dev/null; then wpscan --url "$wp_url" --enumerate u,vp,vt; else echo -e "${RED}[!] WPScan not found.${NC}"; fi
+    cd ../..; pause_menu
 }
 
 run_rustscan() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if ! command -v rustscan >/dev/null; then
         wget -qO rustscan.deb https://github.com/RustScan/RustScan/releases/download/2.0.1/rustscan_2.0.1_amd64.deb
         sudo dpkg -i rustscan.deb
     fi
-    read -p "IP para Varrimento Ultrasónico: " t_ip
+    read -p "Target IP for fast scanning: " t_ip
     rustscan -a "$t_ip" -- -A -sC
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_hydra() {
-    preparar_ferramenta || return
-    read -p "Caminho da Wordlist (ex: /usr/share/wordlists/rockyou.txt): " wordl
-    read -p "User a atacar na porta (ex: root): " usr
-    read -p "URL e Protocolo Exato (ex: ssh://192.168.1.1): " target_f
-    if command -v hydra >/dev/null; then hydra -l "$usr" -P "$wordl" "$target_f"; else echo -e "${RED}[!] Falha de sistema. Instala a Opção 1.${NC}"; fi
-    cd ../..; pausar
+    prepare_tools_dir || return
+    read -p "Wordlist path (e.g., /usr/share/wordlists/rockyou.txt): " wordl
+    read -p "Target User: " usr
+    read -p "Target Protocol & URL (e.g., ssh://192.168.1.1): " target_f
+    if command -v hydra >/dev/null; then hydra -l "$usr" -P "$wordl" "$target_f"; else echo -e "${RED}[!] Hydra not found.${NC}"; fi
+    cd ../..; pause_menu
 }
 
 run_ffuf() {
-    preparar_ferramenta || return
-    read -p "Website a invadir a terminar com FUZZ (ex: http://site.com/FUZZ): " fz_site
-    read -p "Caminho para o ficheiro de diretórios (ex: wordlist.txt): " dir_w
-    if command -v ffuf >/dev/null; then ffuf -w "$dir_w" -u "$fz_site" -c; else echo -e "${RED}[!] Instala Requisitos!${NC}"; fi
-    cd ../..; pausar
+    prepare_tools_dir || return
+    read -p "Target URL ending with FUZZ (e.g., http://example.com/FUZZ): " fz_site
+    read -p "Directory wordlist path: " dir_w
+    if command -v ffuf >/dev/null; then ffuf -w "$dir_w" -u "$fz_site" -c; else echo -e "${RED}[!] Ffuf not found.${NC}"; fi
+    cd ../..; pause_menu
 }
 
 run_seeker() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if [ ! -d "seeker" ]; then git clone https://github.com/thewhiteh4t/seeker.git; fi
     cd seeker
     bash install.sh
     python3 seeker.py
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_torproxy() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if [ ! -d "Auto_Tor_IP_changer" ]; then git clone https://github.com/FDX100/Auto_Tor_IP_changer.git; fi
     cd Auto_Tor_IP_changer
     sudo python3 install.py
     aut
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_netexec() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if ! command -v netexec >/dev/null; then
-        echo -e "${YELLOW}[!] A instalar NetExec via pipx (Isolamento Seguro Num Container Pip)...${NC}"
+        echo -e "${DARK_GRAY}[*] Installing NetExec via pipx...${NC}"
         pipx install netexec 2>/dev/null || sudo apt install -y netexec
     fi
-    read -p "Alvo/Rede Windows (ex: 192.168.1.0/24, DomainController IP): " tg_smb
-    if ! sanitize_input "$tg_smb"; then echo -e "${RED}[!] Input hostil bloqueado.${NC}"; pausar; return; fi
+    read -p "Target Windows Network (e.g., 192.168.1.0/24): " tg_smb
+    if ! sanitize_input "$tg_smb"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     if [ -n "$tg_smb" ]; then
-        echo -e "${MAGENTA}[*] A iniciar varrimento SMB (Null Session & Active Directory Map)...${NC}"
+        echo -e "${DARK_GRAY}[*] Initiating SMB scanning...${NC}"
         netexec smb "$tg_smb"
     fi
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_sliver() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if [ ! -d "sliver" ]; then
         mkdir sliver; cd sliver
-        echo -e "${YELLOW}[!] A descarregar Framework C2 (Sliver) do BishopFox remotamente...${NC}"
+        echo -e "${DARK_GRAY}[*] Downloading Sliver C2 framework...${NC}"
         curl -sL https://github.com/BishopFox/sliver/releases/latest/download/sliver-server_linux -o sliver-server
         chmod +x sliver-server
     else
         cd sliver
     fi
-    echo -e "${RED}[!] A INICIAR SERVIDOR DE CONTROLO DE BOTS (SLIVER C2)...${NC}"
+    echo -e "${DARK_GRAY}[*] Loading Sliver Server...${NC}"
     ./sliver-server
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
 run_metasploit() {
-    preparar_ferramenta || return
+    prepare_tools_dir || return
     if command -v msfconsole >/dev/null; then
-        echo -e "${RED}[!] A Engatar Orquestrador Metasploit. Boa caçada.${NC}"
+        echo -e "${DARK_GRAY}[*] Loading Metasploit Framework...${NC}"
         msfconsole -q
     else
-        echo -e "${RED}[!] Metasploit não instalado! Vai ao Menu de Requisitos.${NC}"
+        echo -e "${RED}[!] Metasploit not found. Install requirements.${NC}"
     fi
-    cd ../..; pausar
+    cd ../..; pause_menu
 }
 
-limpeza_sandbox() {
+clean_tools_dir() {
     clear
     rm -rf Tools/ && mkdir -p Tools
-    echo -e "${GREEN}[+] O teu histórico de ferramentas descarregadas foi exterminado.${NC}"
-    pausar
+    echo -e "${DARK_GRAY}[+] Tools directory purged.${NC}"
+    pause_menu
 }
 
 # ==========================================
-# CÉREBRO: DEADSHOT WIZARD & LIVE INTEL & AI ORACLE
+# LOCAL AI ASSISTANT & LIVE INTEL
 # ==========================================
-run_ollama_ai() {
+run_ai_assistant() {
     clear
-    echo -e "${RED}             [ DEADSHOT AI - RED TEAM ORACLE ]${NC}"
-    echo -e "${YELLOW}[!] A INICIAR CÉREBRO TÁTICO OFFLINE (Sem Filtros Estritos).${NC}"
+    echo -e "${RED}             [ DEADSHOT AI ASSISTANT ]${NC}"
+    echo -e "${DARK_GRAY}[*] Initializing local LLM engine...${NC}"
     
     if ! command -v ollama >/dev/null; then
-        echo -e "${RED}[!] Motor 'Ollama' não detetado no teu Kali Linux.${NC}"
-        echo -e "${CYAN}[*] Descarrega o Kernel Neural com: curl -fsSL https://ollama.com/install.sh | sh${NC}"
-        pausar
+        echo -e "${RED}[!] Ollama engine not found.${NC}"
+        echo -e "${DARK_GRAY}[*] Install manually: curl -fsSL https://ollama.com/install.sh | sh${NC}"
+        pause_menu
         return
     fi
     
-    # Iniciar daemon se estiver em baixo (requer sudo systemd em alguns kali)
     sudo systemctl start ollama 2>/dev/null
     
-    echo -e "${MAGENTA}[*] A conectar à base neuronal 'Dolphin-Phi' (Modelo tático leve - 1.6GB)...${NC}"
-    echo -e "${GREEN}[+] O Oráculo aguarda o teu comando. (Escreve /bye para sair)${NC}"
+    echo -e "${DARK_GRAY}[*] Loading 'dolphin-phi' model into memory...${NC}"
+    echo -e "${DARK_GRAY}[*] Type /bye to exit the chat.${NC}"
     echo ""
     ollama run dolphin-phi
     
     clear
-    echo -e "${GREEN}[*] Desconexão Neural Concluída. A regressar à Interface Mortífera...${NC}"
+    echo -e "${DARK_GRAY}[*] AI Assistant terminated. Returning to framework.${NC}"
     sleep 1
 }
 
-run_deadshot_ai() {
-    alvo=$(whiptail --title "[ DEADSHOT EXPERT SYSTEM ]" --menu "Conexão cifrada e estabilizada.\nQual é a finalidade principal da Operação de hoje?" 20 75 7 \
-    "0" "[CÉREBRO] Iniciar Co-Piloto IA (Red Team Oracle)" \
-    "1" "Investigar o perfil e dados de uma Identidade/Pessoa" \
-    "2" "Invadir a Administração de uma Aplicação Web/Servidor" \
-    "3" "Rebentar Palavras-Passe de um Servidor Confidencial" \
-    "4" "Acompanhar Rastreio Físico de um Alvo (Sinal GPS)" \
-    "5" "[LIVE INTEL] Consultar Radares de Inteligência do Dia" 3>&1 1>&2 2>&3)
+run_live_intel() {
+    clear
+    if ! command -v jq >/dev/null || ! command -v curl >/dev/null; then
+        echo -e "${RED}[!] jq or curl missing. Install core dependencies.${NC}"
+        pause_menu
+        return
+    fi
+
+    echo -e "${DARK_GRAY}[*] Querying sources via Tor SOCKS5...${NC}"
+    sleep 2
+    
+    PROXY_URL="socks5h://127.0.0.1:9050"
+    
+    echo -e "${RED}\n[=] RECENT CVE EXPLOITS (GITHUB):${NC}"
+    curl -x "$PROXY_URL" -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "https://api.github.com/search/repositories?q=CVE-2024&sort=updated&order=desc" 2>/dev/null | jq -r '.items[0:3] | " [X] \(.name): \(.description)"'
+    
+    echo -e "${RED}\n[=] ACTIVE PUBLIC BUG BOUNTIES:${NC}"
+    curl -x "$PROXY_URL" -s "https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/main/data/hackerone_data.json" 2>/dev/null | jq -r '.[0:3] | " [+] \(.url)"'
+    
+    echo -e "\n${DARK_GRAY}[+] Intel gathering complete.${NC}"
+    pause_menu
+}
+
+run_ai_hub() {
+    alvo=$(whiptail --title "[ DEADSHOT AI & INTEL ]" --menu "Select operation:" 20 75 7 \
+    "1" "Local AI Assistant (Ollama)" \
+    "2" "Live Vulnerability Intel" \
+    "3" "OSINT & Identity Footprinting" \
+    "4" "Web Application Scanning" \
+    "5" "Protocol Bruteforcing" \
+    "0" "<< Return" 3>&1 1>&2 2>&3)
 
     if [ -z "$alvo" ]; then return; fi
 
     case $alvo in
-        "0")
-            run_ollama_ai
-            ;;
-        "1")
-            p_dados=$(whiptail --title "[ DEADSHOT WIZARD - OSINT ]" --menu "Para OSINT, que tipo de vestígio tens nas mãos?" 20 75 3 "A" "O seu Número de Telemóvel" "B" "O seu Username favorito" "C" "A Empresa a que pertence" 3>&1 1>&2 2>&3)
+        "1") run_ai_assistant ;;
+        "2") run_live_intel ;;
+        "3")
+            p_dados=$(whiptail --title "[ OSINT HUB ]" --menu "Select target type:" 20 75 3 "A" "Phone Number" "B" "Username" "C" "Corporate Domain" 3>&1 1>&2 2>&3)
             if [ "$p_dados" = "A" ]; then run_phoneinfoga; elif [ "$p_dados" = "B" ]; then run_sherlock; elif [ "$p_dados" = "C" ]; then run_theharvester; fi
             ;;
-        "2")
-            s_dados=$(whiptail --title "[ DEADSHOT WIZARD - WEB ]" --menu "Tática para invasão da infraestrutura web:" 20 75 4 "A" "Fuzzar diretórios de Logins admin ocultos" "B" "Atacar blogs mal-construídos de WordPress" "C" "Extrair bases de dados por SQLi exposta" "D" "Despejar milhares de falhas CVE automaticamente" 3>&1 1>&2 2>&3)
+        "4")
+            s_dados=$(whiptail --title "[ WEB SCANNERS ]" --menu "Select tactic:" 20 75 4 "A" "Fuzz web directories" "B" "Scan WordPress instances" "C" "Automated SQLi Extraction" "D" "Nuclei Template Scanning" 3>&1 1>&2 2>&3)
             if [ "$s_dados" = "A" ]; then run_ffuf; elif [ "$s_dados" = "B" ]; then run_wpscan; elif [ "$s_dados" = "C" ]; then run_sqlmap; elif [ "$s_dados" = "D" ]; then run_nuclei; fi
             ;;
-        "3")
-            whiptail --title "[ DEADSHOT WIZARD - BRUTE FORCE ]" --msgbox "O Cérebro aponta irrevogavelmente para [THC-Hydra] aliado a Wordlists profundas." 10 70
+        "5")
+            whiptail --title "[ BRUTEFORCE ]" --msgbox "Using THC-Hydra for remote protocol bruteforcing." 10 70
             run_hydra
             ;;
-        "4")
-            run_seeker
-            ;;
-        "5")
-            whiptail --title "[ DEADSHOT WIZARD - INTEL GLOVAL ]" --msgbox "O sistema acederá a repositórios GitHub Security e listagens Open Bounty para compilar atividade de interesse vital. Verifique a shell." 15 70
-            clear
-            
-            if ! command -v jq >/dev/null || ! command -v curl >/dev/null; then
-                echo -e "${RED}[!] Interrupção: 'jq' ou 'cURL' em falta. Instala os ficheiros vitais no Menu [1] e repete o comando.${NC}"
-                pausar
-                return
-            fi
-
-            echo -e "${MAGENTA}[*] (SYSTEM) Ocultando Tráfego... Procurando no TorSOCKS os vetores críticos ressonantes...${NC}"
-            sleep 2
-            
-            # Utilizar o Proxy SOCKS5 do Tor para todas as pesquisas Live Intel
-            PROXY_URL="socks5h://127.0.0.1:9050"
-            
-            echo -e "${RED}\n[=] [!] AS ÚLTIMAS VULNERABILIDADES (CVE Exploits Ativos):${NC}"
-            curl -x "$PROXY_URL" -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "https://api.github.com/search/repositories?q=CVE-2024&sort=updated&order=desc" 2>/dev/null | jq -r '.items[0:3] | " [X] \(.name): \(.description)"'
-            
-            echo -e "${CYAN}\n[=] [+] ALVOS (BUG BOUNTY) PÚBLICOS DISPONÍVEIS AGORA:${NC}"
-            curl -x "$PROXY_URL" -s "https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/main/data/hackerone_data.json" 2>/dev/null | jq -r '.[0:3] | " [V] \(.url) (Autorizado Hack HackerOne)"'
-            
-            echo -e "\n${GREEN}[+] Extração Limpa Desconectada (TOR). Estes são os vetores atuais.${NC}"
-            pausar
-            ;;
+        "0") return ;;
     esac
 }
 
 # ==========================================
-# MENUS DE SUBSISTEMA CORPORATIVO
+# MENUS
 # ==========================================
 menu_osint() {
-    CHOICE=$(whiptail --title "[ OSINT PROTOCOL ]" --menu "Seleciona o vetor a implantar:" 20 70 5 "1" "Amass (Mapeamento de Subdomínios Ocultos OWASP)" "2" "TheHarvester (Extração de Metadados Corporativos)" "3" "PhoneInfoga (Inteligência Digital Móvel)" "4" "Sherlock (Varrimento Global a 400 Sites)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ OSINT PROTOCOL ]" --menu "Select specific tool:" 20 70 5 "1" "Amass (Subdomain Mapping)" "2" "TheHarvester (Metadata Extraction)" "3" "PhoneInfoga (Phone Intelligence)" "4" "Sherlock (Username Tracking)" "0" "<< Return" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_amass ;; 2) run_theharvester ;; 3) run_phoneinfoga ;; 4) run_sherlock ;; esac
 }
 
 menu_web() {
-    CHOICE=$(whiptail --title "[ WEB EXPLOITATION PROTOCOL ]" --menu "Mecanismos Ofensivos a Alvos HTTP:" 20 70 5 "1" "SQLMap (Injeção Grosseira SQL e Dumps)" "2" "Nuclei (Lança Milhares de Exploits Raticamente)" "3" "Nikto (Auditoria Destrutiva Clássica)" "4" "WPScan (Auto-Pwn à Plataforma WordPress)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ WEB EXPLOITATION ]" --menu "Select specific tool:" 20 70 5 "1" "SQLMap" "2" "Nuclei" "3" "Nikto" "4" "WPScan" "0" "<< Return" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_sqlmap ;; 2) run_nuclei ;; 3) run_nikto ;; 4) run_wpscan ;; esac
 }
 
 menu_bruteforce() {
-    CHOICE=$(whiptail --title "[ INFILTRATION PROTOCOL ]" --menu "Ataques de Força Bruta Letais:" 20 70 4 "1" "RustScan (Varrimento a 65,000 Portas Ultra-Velocidade)" "2" "THC-Hydra (Força Bruta Rígida a redes FTP/SSH)" "3" "Ffuf (Fuzzer Web de diretórios invisíveis)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ PORT EXPLOITATION ]" --menu "Select specific tool:" 20 70 4 "1" "RustScan (Fast Port Scanning)" "2" "THC-Hydra (Protocol Bruteforce)" "3" "Ffuf (Directory Fuzzing)" "0" "<< Return" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_rustscan ;; 2) run_hydra ;; 3) run_ffuf ;; esac
 }
 
-menu_social() {
-    CHOICE=$(whiptail --title "[ SOCIAL ENGINEERING PROTOCOL ]" --menu "Vetores contra Mente Humana:" 20 70 5 "1" "Zphisher (Portal Falso Phishing seguro)" "2" "Camphish (Ligação Intercetora WebCams)" "3" "Seeker (Exige GPS Exacto Mundial de Vítima)" "4" "Auto-IP Changer (Gira Proxies Tor Automaticamente)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
-    case $CHOICE in 1) run_zphisher ;; 2) run_camphish ;; 3) run_seeker ;; 4) run_torproxy ;; esac
-}
-
 menu_post_exploitation() {
-    CHOICE=$(whiptail --title "[ DOMÍNIO E PÓS-EXPLORAÇÃO (C2) ]" --menu "Ciber-Artilharia Pesada:" 20 70 4 "1" "NetExec (Domínio Ativo Windows & SMB Spray)" "2" "Sliver (Botnets & Implants invisíveis)" "3" "Metasploit (Orquestração Massiva)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ POST-EXPLOITATION & C2 ]" --menu "Select framework:" 20 70 4 "1" "NetExec (AD/Windows Mapping)" "2" "Sliver (C2 Implants)" "3" "Metasploit Console" "0" "<< Return" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_netexec ;; 2) run_sliver ;; 3) run_metasploit ;; esac
 }
 
+menu_social() {
+    CHOICE=$(whiptail --title "[ SOCIAL ENGINEERING ]" --menu "Select specific tool:" 20 70 5 "1" "Zphisher (Phishing Pages)" "2" "Camphish (Webcam Capture)" "3" "Seeker (GPS Tracking)" "4" "Auto-Tor IP Changer" "0" "<< Return" 3>&1 1>&2 2>&3)
+    case $CHOICE in 1) run_zphisher ;; 2) run_camphish ;; 3) run_seeker ;; 4) run_torproxy ;; esac
+}
+
 menu_system() {
-    CHOICE=$(whiptail --title "[ SYSTEM ROOT ]" --menu "Operações de Base:" 20 70 4 "1" "Auto-Instalar Core (Nmap, PIPX, Metasploit, etc)" "2" "Purgar o Diretório Secundário (Tools/)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
-    case $CHOICE in 1) run_requisitos ;; 2) limpeza_sandbox ;; esac
+    CHOICE=$(whiptail --title "[ SYSTEM ROOT ]" --menu "Base operations:" 20 70 4 "1" "Install Core Dependencies" "2" "Purge Tools Directory" "0" "<< Return" 3>&1 1>&2 2>&3)
+    case $CHOICE in 1) run_requisitos ;; 2) clean_tools_dir ;; esac
 }
 
 while true; do
-    MAIN=$(whiptail --title "[ DEADSHOT TOOLS V6 - SECURE KERNEL ]" --menu "Sistema Autónomo Armado. Escolha a sua Via Operacional:" 20 80 8 \
-    "1" "[SISTEMA EXPERT] Deadshot AI & Intel Dinâmica" \
-    "2" "[FASE 1] Inteligência Tática Militar e OSINT" \
-    "3" "[FASE 2] Invasões a Aplicações Web (Scanners)" \
-    "4" "[FASE 3] Exploração de Portas Livres, Bruteforce" \
-    "5" "[FASE 4] Domínio e Pós-Exploração (C2 & AD)" \
-    "6" "[FASE 5] Vetor Físico - GPS Tracker e Fake Links" \
-    "7" "[ROOT] Dependências do Core, Atualizar e Limpar" \
-    "0" ">> Encerrar SubSistemas Discretamente" 3>&1 1>&2 2>&3)
+    MAIN=$(whiptail --title "[ DEADSHOT TOOLS V7 ]" --menu "Select Operation Phase:" 20 80 8 \
+    "1" "[ Phase 0 ] AI Assistant & Live Intel" \
+    "2" "[ Phase 1 ] OSINT & Footprinting" \
+    "3" "[ Phase 2 ] Web Application Scanners" \
+    "4" "[ Phase 3 ] External Services & Bruteforce" \
+    "5" "[ Phase 4 ] Post-Exploitation & C2" \
+    "6" "[ Phase 5 ] Social Engineering" \
+    "7" "[ Config ] Core Dependencies & Cleanup" \
+    "0" ">> Exit Framework" 3>&1 1>&2 2>&3)
 
     case $MAIN in
-        1) run_deadshot_ai ;;
+        1) run_ai_hub ;;
         2) menu_osint ;;
         3) menu_web ;;
         4) menu_bruteforce ;;
         5) menu_post_exploitation ;;
         6) menu_social ;;
         7) menu_system ;;
-        0|"") abort_protocol ;;
+        0|"") clean_exit ;;
     esac
 done
