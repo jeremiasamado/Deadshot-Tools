@@ -45,6 +45,7 @@ TOOLS = {
 }
 
 class DeadshotUI(App):
+    TITLE = "DEADSHOT TACTICAL O.S. (V7)"
     CSS = """
     Screen {
         background: #000000;
@@ -155,5 +156,5 @@ class DeadshotUI(App):
             self.query_one("#categories").focus()
 
 if __name__ == "__main__":
-    app = DeadshotUI(title="DEADSHOT TACTICAL O.S. (V7)")
+    app = DeadshotUI()
     app.run()
