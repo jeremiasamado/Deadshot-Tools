@@ -33,6 +33,18 @@ TOOLS = {
         ("Sliver C2", "run_sliver", "Generate undetectable beacons for command & control over infected hosts."),
         ("Metasploit", "run_metasploit", "Full MSFConsole orchestration for remote shell injection.")
     ],
+    "Privilege Escalation": [
+        ("PEAS Remote Server", "run_peas_server", "Host a clandestine 8080 HTTP server to auto-deliver LinPEAS/WinPEAS to victims.")
+    ],
+    "Internal Network (AD)": [
+        ("Responder", "run_responder", "Poison local LLMNR/NBT-NS protocols to intercept and steal NTLM Hashes from Windows hosts.")
+    ],
+    "Wireless & Physical": [
+        ("Wifite2 (Radio Attack)", "run_wifite", "Takeover wireless cards to deauthenticate clients and capture WPA/PMKID handshakes.")
+    ],
+    "Password Cracking (GPU)": [
+        ("Hashcat Offline Cracker", "run_hashcat", "Unleash GPU power to crush extracted hashes offline using global wordlists.")
+    ],
     "Social Engineering": [
         ("Zphisher", "run_zphisher", "Deploy secure phishing portals with automatic Ngrok tunneling."),
         ("Camphish", "run_camphish", "WebCam interception via disguised links."),

