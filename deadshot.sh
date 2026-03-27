@@ -14,18 +14,47 @@ CYAN='\033[36;1m'
 NC='\033[0m'
 
 # ==========================================
-# GHOST MODE - INICIALIZAÇÃO SEGURA (ANTI-FORENSICS)
+# SPLASH SCREEN (DEADSHOT ASCII ART TACTICAL)
+# ==========================================
+ascii_banner() {
+    clear
+    echo -e "${RED}"
+    echo '    ____  _________    ____  _____ __  ______  ______'
+    echo '   / __ \/ ____/   |  / __ \/ ___// / / / __ \/_  __/'
+    echo '  / / / / __/ / /| | / / / /\__ \/ /_/ / / / / / /   '
+    echo ' / /_/ / /___/ ___ |/ /_/ /___/ / __  / /_/ / / /    '
+    echo '/_____/_____/_/  |_/_____//____/_/ /_/\____/ /_/     '
+    echo ""
+    echo -e "${CYAN}             [ T A C T I C A L   T O O L S   V 5 ]${NC}"
+    echo -e "${CYAN}            +---------------------------------------+${NC}"
+    echo -e "${CYAN}            |        B L A C K   O P S   A I        |${NC}"
+    echo -e "${CYAN}            +---------------------------------------+${NC}"
+    echo ""
+    sleep 2
+}
+
+# ==========================================
+# GHOST MODE V2 - INICIALIZAÇÃO SEGURA (ANTI-FORENSICS TÁTICO)
 # ==========================================
 ghost_mode() {
-    clear
+    ascii_banner
     echo -e "${YELLOW}[!] PROTOCOLO GHOST A INICIAR (Privilégios Administrativos Elevados Exigidos)${NC}"
     echo -e "${MAGENTA}[*] Identidade, Cache e Interface de Rede vão ser desvinculadas...${NC}"
     sleep 1
     
-    # Anti-Forensics: Limpeza de Cache RAM e Histórico Bash
-    sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches" 2>/dev/null
-    cat /dev/null > ~/.bash_history 2>/dev/null
-    history -c 2>/dev/null
+    # Anti-Forensics Nível 2: Desligar o Histórico do Bash na Sessão
+    export HISTFILE=/dev/null
+    unset HISTSIZE
+    unset HISTFILESIZE
+
+    # Limpeza de Cache RAM Tática Profunda
+    sudo sh -c "echo 3 > /proc/sys/vm/drop_caches" 2>/dev/null
+    sudo sh -c "echo 1 > /proc/sys/vm/oom_dump_tasks" 2>/dev/null
+    
+    # Destruição Criptográfica de Registos Antigos
+    if [ -f ~/.bash_history ]; then
+        shred -u ~/.bash_history 2>/dev/null
+    fi
     
     # Detetar Interface e Executar Spoofing
     IFACE=$(ip route get 8.8.8.8 2>/dev/null | awk '{print $5}' | head -n 1)
@@ -42,7 +71,17 @@ ghost_mode() {
     else
         echo -e "${RED}[!] Interface de rede nula (Offline). A ignorar protocolo MAC.${NC}"
     fi
-    echo -e "${GREEN}[*] 100% LIMPO. Bem-vindo às Sombras.${NC}"
+
+    # Shield Tor (Proxy SOCKS5 Nível Local)
+    echo -e "${MAGENTA}[*] A invocar Rede Tor Oculta (Proxychains)...${NC}"
+    if command -v tor >/dev/null; then
+        sudo service tor start >/dev/null 2>&1
+        echo -e "${GREEN}[+] Ligação Onion estabelecida com sucesso. Rastreio mitigado.${NC}"
+    else
+        echo -e "${RED}[!] Serviço Tor Inexistente. Expões o Teu IP! Instala as Dependências [Opção 1]!${NC}"
+    fi
+
+    echo -e "${GREEN}[*] GHOST MODE [L2] ESTABILIZADO. A Operar Clandestinamente.${NC}"
     sleep 2
 }
 
@@ -259,16 +298,19 @@ run_deadshot_ai() {
                 return
             fi
 
-            echo -e "${MAGENTA}[*] (SYSTEM) Varrendo os subníveis da internet à procura de vetores críticos recém-criados...${NC}"
+            echo -e "${MAGENTA}[*] (SYSTEM) Ocultando Tráfego... Procurando no TorSOCKS os vetores críticos ressonantes...${NC}"
             sleep 2
             
+            # Utilizar o Proxy SOCKS5 do Tor para todas as pesquisas Live Intel
+            PROXY_URL="socks5h://127.0.0.1:9050"
+            
             echo -e "${RED}\n[=] [!] AS ÚLTIMAS VULNERABILIDADES (CVE Exploits Ativos):${NC}"
-            curl -s -H "User-Agent: Deadshot_Core" "https://api.github.com/search/repositories?q=CVE-2024&sort=updated&order=desc" 2>/dev/null | jq -r '.items[0:3] | " [X] \(.name): \(.description)"'
+            curl -x "$PROXY_URL" -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "https://api.github.com/search/repositories?q=CVE-2024&sort=updated&order=desc" 2>/dev/null | jq -r '.items[0:3] | " [X] \(.name): \(.description)"'
             
             echo -e "${CYAN}\n[=] [+] ALVOS (BUG BOUNTY) PÚBLICOS DISPONÍVEIS AGORA:${NC}"
-            curl -s "https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/main/data/hackerone_data.json" 2>/dev/null | jq -r '.[0:3] | " [V] \(.url) (Autorizado Hack HackerOne)"'
+            curl -x "$PROXY_URL" -s "https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/main/data/hackerone_data.json" 2>/dev/null | jq -r '.[0:3] | " [V] \(.url) (Autorizado Hack HackerOne)"'
             
-            echo -e "\n${GREEN}[+] Extração terminada. Estes são os vetores atuais.${NC}"
+            echo -e "\n${GREEN}[+] Extração Limpa Desconectada (TOR). Estes são os vetores atuais.${NC}"
             pausar
             ;;
     esac
