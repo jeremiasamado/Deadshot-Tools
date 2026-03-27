@@ -20,7 +20,7 @@ I rigorously tailored and tested the environment for:
 ## How to Install and Run
 Getting started is simple. Open your terminal and run:
 
-1. `cd ALHacking`
+1. `cd NE0SYNC`
 2. Make the core script executable (first time only): 
    `chmod +x deadshot.sh`
 3. Launch the dashboard: 
@@ -50,7 +50,7 @@ O ambiente foi rigorosamente testado e talhado para:
 ## Como Instalar e Executar
 É simples começar. Abre o teu terminal e executa os seguintes comandos:
 
-1. `cd ALHacking`
+1. `cd NE0SYNC`
 2. Atribui permissão de execução ao script (apenas na primeira vez): 
    `chmod +x deadshot.sh`
 3. Lança o painel de controlo: 

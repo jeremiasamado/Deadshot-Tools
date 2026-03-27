@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ==========================================
-# Projeto Original: ALHacking
+# Projeto Base: ALHacking
 # Refatoração Tática: Deadshot Tools (Fase V5)
-# Arquitetura: Jeremias Amado
+# Criador, Desenvolvedor e Arquiteto: NE0SYNC
 # ==========================================
 
 RED='\033[31;40;1m'
