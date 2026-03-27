@@ -27,6 +27,11 @@ NC='\033[0m'
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 TOOLS_DIR="${SCRIPT_DIR}/Tools"
 
+# Source the external configuration if it exists
+if [ -f "$SCRIPT_DIR/deadshot.conf" ]; then
+    source "$SCRIPT_DIR/deadshot.conf"
+fi
+
 # ==========================================
 # PRE-FLIGHT SYSTEM CHECKS
 # ==========================================
@@ -172,6 +177,18 @@ pause_menu() {
 }
 
 # ==========================================
+# AUTO-REPORTING ENGINE
+# ==========================================
+mkdir -p "$SCRIPT_DIR/Reports"
+log_output() {
+    local tool_name="$1"
+    local timestamp=$(date +"%Y%m%d_%H%M%S")
+    local report_file="$SCRIPT_DIR/Reports/${tool_name}_${timestamp}.txt"
+    tee "$report_file"
+    echo -e "\n${DARK_GRAY}[+] Report Auto-Saved: Reports/${tool_name}_${timestamp}.txt${NC}"
+}
+
+# ==========================================
 # CORE DEPENDENCIES
 # ==========================================
 run_requisitos() {
@@ -188,7 +205,11 @@ run_requisitos() {
 # ==========================================
 sanitize_input() {
     local input="$1"
+    # Block shell execution strings
     if [[ "$input" == *[';&|$\><`\']* ]]; then
+        return 1
+    # Block Flag/Parameter Injection (-oX, -sC, --help)
+    elif [[ "$input" == -* ]]; then
         return 1
     fi
     return 0
@@ -230,7 +251,7 @@ run_theharvester() {
     pip install -r requirements/base.txt 2>/dev/null
     read -p "Target Domain (e.g., example.com): " dom
     if ! sanitize_input "$dom"; then echo -e "${RED}[!] Invalid input.${NC}"; deactivate; pause_menu; return; fi
-    python3 theHarvester.py -d "$dom" -b all
+    python3 theHarvester.py -d "$dom" -b all | log_output "TheHarvester"
     deactivate
     pause_menu
 }
@@ -275,7 +296,7 @@ run_nuclei() {
     if ! sanitize_input "$tg"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
     if command -v nuclei >/dev/null; then
         # Evasion Tactics: Rate limiting and Random User-Agent
-        nuclei -u "$tg" -rl 150 -H "User-Agent: $RANDOM_UA"
+        nuclei -u "$tg" -rl "${NUCLEI_RATE_LIMIT:-150}" -H "User-Agent: $RANDOM_UA" | log_output "Nuclei"
     else 
         echo -e "${RED}[!] Nuclei not found.${NC}"
     fi
@@ -306,7 +327,9 @@ run_rustscan() {
         sudo dpkg -i rustscan.deb
     fi
     read -p "Target IP for fast scanning: " t_ip
-    rustscan -a "$t_ip" -- -A -sC
+    if ! sanitize_input "$t_ip"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
+    
+    rustscan -a "$t_ip" -- -A -sC "${DEFAULT_NMAP_PORTS:--p-}" | log_output "RustScan"
     pause_menu
 }
 
@@ -325,7 +348,7 @@ run_ffuf() {
     read -p "Directory wordlist path: " dir_w
     if command -v ffuf >/dev/null; then 
         # Tactic JITTER: Obfuscates timing and signatures to bypass WAF logic loops
-        ffuf -w "$dir_w" -u "$fz_site" -H "User-Agent: $RANDOM_UA" -p "$JITTER_SEC" -c
+        ffuf -w "$dir_w" -u "$fz_site" -H "User-Agent: $RANDOM_UA" -p "${DEFAULT_JITTER_SECS:-0.9}" -c | log_output "Ffuf"
     else 
         echo -e "${RED}[!] Ffuf not found.${NC}"
     fi
