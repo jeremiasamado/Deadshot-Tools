@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ==========================================
-# Original Project: ALHacking
-# Evolução Militar: Deadshot Tools (Fase V5 - Ghost Mode & AI Live Intel)
-# Segurança Máxima, Ocultação de IP e Parsing de Várzes Mundiais
+# Projeto Original: ALHacking
+# Refatoração Tática: Deadshot Tools (Fase V5)
+# Arquitetura: Jeremias Amado
 # ==========================================
 
 RED='\033[31;40;1m'
@@ -74,13 +74,12 @@ pausar() {
 }
 
 # ==========================================
-# BLOCO DAS FERRAMENTAS CLÁSSICAS (V3) E DEPENDÊNCIAS
+# BLOCO DAS FERRAMENTAS CLÁSSICAS E DEPENDÊNCIAS
 # ==========================================
 run_requisitos() {
     clear
     echo -e "${MAGENTA}[*] A instalar todos os pacotes estruturais na máquina...${NC}"
     sudo apt update && sudo apt upgrade -y
-    # Injetado jq (Para AI ler JSONs) e macchanger (Para o Ghost Mode)
     sudo apt install -y git python3 python3-pip curl php tor ruby nmap amass nuclei hydra ffuf wpscan jq macchanger
     echo -e "${GREEN}[+] O teu Linux está blindado com as ferramentas raízes (incluindo JQ e Macchanger)!${NC}"
     pausar
@@ -140,7 +139,7 @@ run_sherlock() {
     if [ ! -d "sherlock" ]; then git clone https://github.com/sherlock-project/sherlock.git; fi
     cd sherlock
     python3 -m pip install -r requirements.txt --break-system-packages 2>/dev/null || python3 -m pip install -r requirements.txt
-    read -p "Username (ID do Jogador/Alvo): " uname
+    read -p "Username (ID do Alvo): " uname
     if [ -n "$uname" ]; then python3 sherlock "$uname"; fi
     cd ../..; pausar
 }
@@ -222,97 +221,96 @@ limpeza_sandbox() {
 }
 
 # ==========================================
-# CÉREBRO: DEADSHOT AI ASSISTANT & LIVE INTEL
+# CÉREBRO: DEADSHOT WIZARD & LIVE INTEL
 # ==========================================
 run_deadshot_ai() {
-    alvo=$(whiptail --title "🤖 Deadshot AI Wizard" --menu "A tua ligação está anónima e a IA está online.\nQual é o teu rumo operacional hoje?" 20 75 6 \
-    "1" "Investigar o perfil e dados de uma Pessoa/Identidade" \
-    "2" "Invadir a Administração de um Site/Web Server" \
-    "3" "Rebentar Palavras-Passe de um Servidor/Base Confidencial" \
-    "4" "Acompanhar Rastreio Físico de um Alvo (GPS)" \
-    "5" "🌍 Missões do Dia (Quero Hackear de forma legal hoje. Mostra-me alvos!)" 3>&1 1>&2 2>&3)
+    alvo=$(whiptail --title "[ DEADSHOT EXPERT SYSTEM ]" --menu "Conexão cifrada e estabilizada.\nQual é a finalidade principal da Operação de hoje?" 20 75 6 \
+    "1" "Investigar o perfil e dados de uma Identidade/Pessoa" \
+    "2" "Invadir a Administração de uma Aplicação Web/Servidor" \
+    "3" "Rebentar Palavras-Passe de um Servidor Confidencial" \
+    "4" "Acompanhar Rastreio Físico de um Alvo (Sinal GPS)" \
+    "5" "[LIVE INTEL] Consultar Radares de Inteligência do Dia" 3>&1 1>&2 2>&3)
 
     if [ -z "$alvo" ]; then return; fi
 
     case $alvo in
         "1")
-            p_dados=$(whiptail --title "🤖 Deadshot AI Wizard (OSINT)" --menu "Para Pessoas (OSINT), que tipo de vestígio dele na Internet tens nas mãos agora?" 20 75 3 "A" "O seu Número de Telemóvel" "B" "O seu Username favorito" "C" "A Empresa a que ele pertence" 3>&1 1>&2 2>&3)
+            p_dados=$(whiptail --title "[ DEADSHOT WIZARD - OSINT ]" --menu "Para OSINT, que tipo de vestígio tens nas mãos?" 20 75 3 "A" "O seu Número de Telemóvel" "B" "O seu Username favorito" "C" "A Empresa a que pertence" 3>&1 1>&2 2>&3)
             if [ "$p_dados" = "A" ]; then run_phoneinfoga; elif [ "$p_dados" = "B" ]; then run_sherlock; elif [ "$p_dados" = "C" ]; then run_theharvester; fi
             ;;
         "2")
-            s_dados=$(whiptail --title "🤖 Deadshot AI Wizard (Web)" --menu "Tática para invadir a infraestrutura web?" 20 75 4 "A" "Fuzzar diretórios de Logins admin ocultos" "B" "Atacar blogs mal-construídos de WordPress" "C" "Extrair bases de dados por SQLi exposta" "D" "Despejar milhares de falhas CVE automaticamente" 3>&1 1>&2 2>&3)
+            s_dados=$(whiptail --title "[ DEADSHOT WIZARD - WEB ]" --menu "Tática para invasão da infraestrutura web:" 20 75 4 "A" "Fuzzar diretórios de Logins admin ocultos" "B" "Atacar blogs mal-construídos de WordPress" "C" "Extrair bases de dados por SQLi exposta" "D" "Despejar milhares de falhas CVE automaticamente" 3>&1 1>&2 2>&3)
             if [ "$s_dados" = "A" ]; then run_ffuf; elif [ "$s_dados" = "B" ]; then run_wpscan; elif [ "$s_dados" = "C" ]; then run_sqlmap; elif [ "$s_dados" = "D" ]; then run_nuclei; fi
             ;;
         "3")
-            whiptail --title "🤖 Deadshot AI Wizard (Auth)" --msgbox "O Cérebro aponta irrevogavelmente para [THC-Hydra] e listas brutais extraídas de Data Leaks." 10 70
+            whiptail --title "[ DEADSHOT WIZARD - BRUTE FORCE ]" --msgbox "O Cérebro aponta irrevogavelmente para [THC-Hydra] aliado a Wordlists profundas." 10 70
             run_hydra
             ;;
         "4")
             run_seeker
             ;;
         "5")
-            whiptail --title "🤖 Cérebro AI: Intel em Tempo Real" --msgbox "Neste exato minuto a minha matriz irá ligar aos servidores da GitHub Cloud Sec (APIs) para extrair as 3 exploits ativas publicadas e programas abertos de Bug Bounty para a tua secção. Ouve o Terminal." 15 70
+            whiptail --title "[ DEADSHOT WIZARD - INTEL GLOVAL ]" --msgbox "O sistema acederá a repositórios GitHub Security e listagens Open Bounty para compilar atividade de interesse vital. Verifique a shell." 15 70
             clear
             
             if ! command -v jq >/dev/null || ! command -v curl >/dev/null; then
-                echo -e "${RED}[!] JQ ou cURL em falta. Por favor vai ao Sub-menu 'Sistema Básico' e descarrega a Opção 1 antes de eu pesquisar o Universo Hacker.${NC}"
+                echo -e "${RED}[!] Interrupção: 'jq' ou 'cURL' em falta. Instala os ficheiros vitais no Menu [1] e repete o comando.${NC}"
                 pausar
                 return
             fi
 
-            echo -e "${MAGENTA}[*] (📡) Varrendo as profundezas da Internet por atividade recente...${NC}"
+            echo -e "${MAGENTA}[*] (SYSTEM) Varrendo os subníveis da internet à procura de vetores críticos recém-criados...${NC}"
             sleep 2
             
-            echo -e "${RED}\n[=] 💥 AS ÚLTIMAS VULNERABILIDADES (CVE Exploits - 24 horas) NO GITHUB:${NC}"
-            curl -s -H "User-Agent: Deadshot_IA_Engine" "https://api.github.com/search/repositories?q=CVE-2024&sort=updated&order=desc" 2>/dev/null | jq -r '.items[0:3] | " [X] \(.name): \(.description)"'
+            echo -e "${RED}\n[=] [!] AS ÚLTIMAS VULNERABILIDADES (CVE Exploits Ativos):${NC}"
+            curl -s -H "User-Agent: Deadshot_Core" "https://api.github.com/search/repositories?q=CVE-2024&sort=updated&order=desc" 2>/dev/null | jq -r '.items[0:3] | " [X] \(.name): \(.description)"'
             
-            echo -e "${CYAN}\n[=] 🎯 ALVOS DE BUG BOUNTY (DOMÍNIOS RECOMENDADOS PARA TESTE PENAL LIVE HOJE):${NC}"
-            # Dados abertos públicos do Chaos Project ou dados JSON formatados
+            echo -e "${CYAN}\n[=] [+] ALVOS (BUG BOUNTY) PÚBLICOS DISPONÍVEIS AGORA:${NC}"
             curl -s "https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/main/data/hackerone_data.json" 2>/dev/null | jq -r '.[0:3] | " [V] \(.url) (Autorizado Hack HackerOne)"'
             
-            echo -e "\n${GREEN}[+] Ficheiros Extraídos. Usa FFUF, Nuclei ou SQLMap nos alvos Bug Bounty acima sem medo de prisão!${NC}"
+            echo -e "\n${GREEN}[+] Extração terminada. Estes são os vetores atuais.${NC}"
             pausar
             ;;
     esac
 }
 
 # ==========================================
-# MENUS GRÁFICOS E INTERFACES (TUI)
+# MENUS DE SUBSISTEMA CORPORATIVO
 # ==========================================
 menu_osint() {
-    CHOICE=$(whiptail --title "Sub-Central: OSINT" --menu "Seleciona as ferramentas furtivas de Inteligência de Código Aberto:" 20 70 5 "1" "Amass (Mapeamento de Subdomínios Ocultos OWASP)" "2" "TheHarvester (Caça-Emaill em Redes Corporativas)" "3" "PhoneInfoga (Mapeamento Analítico de N. Telemóveis)" "4" "Sherlock (Sherlock Global a Usernames em 400 Sites)" "0" "<< Voltar ao Ecrã Principal" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ OSINT PROTOCOL ]" --menu "Seleciona o vetor a implantar:" 20 70 5 "1" "Amass (Mapeamento de Subdomínios Ocultos OWASP)" "2" "TheHarvester (Extração de Metadados Corporativos)" "3" "PhoneInfoga (Inteligência Digital Móvel)" "4" "Sherlock (Varrimento Global a 400 Sites)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_amass ;; 2) run_theharvester ;; 3) run_phoneinfoga ;; 4) run_sherlock ;; esac
 }
 
 menu_web() {
-    CHOICE=$(whiptail --title "Sub-Central: Web" --menu "Lança Scanners Agressivos para Portas Web Expostas:" 20 70 5 "1" "SQLMap (Extração Completa de Bases de Dados SQL)" "2" "Nuclei (Lança Milhares de Exploits a Milissegundos)" "3" "Nikto (Auditoria Destrutiva Clássica)" "4" "WPScan (Auto-Pwn à Plataforma WordPress)" "0" "<< Voltar ao Ecrã Principal" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ WEB EXPLOITATION PROTOCOL ]" --menu "Mecanismos Ofensivos a Alvos HTTP:" 20 70 5 "1" "SQLMap (Injeção Grosseira SQL e Dumps)" "2" "Nuclei (Lança Milhares de Exploits Raticamente)" "3" "Nikto (Auditoria Destrutiva Clássica)" "4" "WPScan (Auto-Pwn à Plataforma WordPress)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_sqlmap ;; 2) run_nuclei ;; 3) run_nikto ;; 4) run_wpscan ;; esac
 }
 
 menu_bruteforce() {
-    CHOICE=$(whiptail --title "Sub-Central: Infiltração" --menu "Dispara mecanismos de Força Bruta:" 20 70 4 "1" "RustScan (Varrimento a 65,000 Portas Ultra-Velocidade)" "2" "THC-Hydra (Força Bruta pura a redes FTP/SSH)" "3" "Ffuf (Fuzzer Web de diretórios invisíveis)" "0" "<< Voltar ao Ecrã Principal" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ INFILTRATION PROTOCOL ]" --menu "Ataques de Força Bruta Letais:" 20 70 4 "1" "RustScan (Varrimento a 65,000 Portas Ultra-Velocidade)" "2" "THC-Hydra (Força Bruta Rígida a redes FTP/SSH)" "3" "Ffuf (Fuzzer Web de diretórios invisíveis)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_rustscan ;; 2) run_hydra ;; 3) run_ffuf ;; esac
 }
 
 menu_social() {
-    CHOICE=$(whiptail --title "Sub-Central: Engenharia Social" --menu "Ataca o comportamento Humano:" 20 70 5 "1" "Zphisher (Phishing via URL Seguro)" "2" "Camphish (Interceção silenciosa Câmaras)" "3" "Seeker (Exige GPS Exacto Mundial num Mapa de Vítima)" "4" "Auto-IP Changer (Gira Proxies Tor)" "0" "<< Voltar ao Ecrã Principal" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ SOCIAL ENGINEERING PROTOCOL ]" --menu "Vetores contra Mente Humana:" 20 70 5 "1" "Zphisher (Portal Falso Phishing seguro)" "2" "Camphish (Ligação Intercetora WebCams)" "3" "Seeker (Exige GPS Exacto Mundial de Vítima)" "4" "Auto-IP Changer (Gira Proxies Tor Automaticamente)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_zphisher ;; 2) run_camphish ;; 3) run_seeker ;; 4) run_torproxy ;; esac
 }
 
 menu_system() {
-    CHOICE=$(whiptail --title "Sub-Central: Sistema Básico" --menu "Ferramentas Básicas do GUI:" 20 70 4 "1" "Instalar Arsenal Vital (Nmap, JQ, Hydra, Go, Pip)" "2" "Limpar a Sandbox de Projetos Atacados" "0" "<< Voltar ao Ecrã Principal" 3>&1 1>&2 2>&3)
+    CHOICE=$(whiptail --title "[ SYSTEM ROOT ]" --menu "Operações de Base:" 20 70 4 "1" "Auto-Instalar Dependências Core (Nmap, JQ, Go, Pip)" "2" "Purgar o Diretório Secundário (Tools/)" "0" "<< Retornar" 3>&1 1>&2 2>&3)
     case $CHOICE in 1) run_requisitos ;; 2) limpeza_sandbox ;; esac
 }
 
 while true; do
-    MAIN=$(whiptail --title "🎯 DEADSHOT TOOLS   V5 (GHOST PROTOCOL)" --menu "Míssil Tático Ativo e Anónimo. Escolha a sua Via Operacional:" 20 80 7 \
-    "1" "🧠 O CÉREBRO: IA DEADSHOT & INTEL GLOBAL EM TEMPO REAL" \
-    "2" "🥷 1. Fase Tática: Inteligência e Reconhecimento OSINT" \
-    "3" "💣 2. Fase Tática: Invasão a Aplicações Web e Scanners" \
-    "4" "🔓 3. Fase Tática: Explorar Portas Livres, Wordlists Críticas" \
-    "5" "🎭 4. Fase Tática: Físico - GPS Tracker e Links Falsos" \
-    "6" "⚙️ Root: Atualizações, Instalações Críticas e Desinstalar" \
-    "0" ">> Sair Sem Deixar Rasto" 3>&1 1>&2 2>&3)
+    MAIN=$(whiptail --title "[ DEADSHOT TOOLS V5 - GHOST PROTOCOL ]" --menu "Sistema Autónomo Armado. Escolha a sua Via Operacional:" 20 80 7 \
+    "1" "[SISTEMA EXPERT] Deadshot AI & Intel Dinâmica" \
+    "2" "[FASE 1] Inteligência Tática Militar e OSINT" \
+    "3" "[FASE 2] Invasões a Aplicações Web (Scanners)" \
+    "4" "[FASE 3] Exploração de Portas Livres, Bruteforce" \
+    "5" "[FASE 4] Vetor Físico - GPS Tracker e Fake Links" \
+    "6" "[ROOT] Dependências do Core, Atualizar e Limpar" \
+    "0" ">> Encerrar SubSistemas Discretamente" 3>&1 1>&2 2>&3)
 
     case $MAIN in
         1) run_deadshot_ai ;;
@@ -321,6 +319,6 @@ while true; do
         4) menu_bruteforce ;;
         5) menu_social ;;
         6) menu_system ;;
-        0|"") clear; echo -e "${GREEN}[*] Desmantelando Ciber-Operações. Bye.${NC}"; exit 0 ;;
+        0|"") clear; echo -e "${GREEN}[*] Desmantelando Ciber-Operações. Secção Limpa.${NC}"; exit 0 ;;
     esac
 done
