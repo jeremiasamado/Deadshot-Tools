@@ -59,6 +59,18 @@ ascii_banner() {
 }
 
 # ==========================================
+# ADVANCED OPSEC: UA ROTATION & JITTER
+# ==========================================
+USER_AGENTS=(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2.1 Safari/605.1.15"
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
+)
+RANDOM_UA=${USER_AGENTS[$RANDOM % ${#USER_AGENTS[@]}]}
+JITTER_SEC="0.$(($RANDOM % 9 + 1))"
+
+# ==========================================
 # TEAR-DOWN & CLEANUP
 # ==========================================
 clean_exit() {
@@ -77,6 +89,16 @@ clean_exit() {
             sudo macchanger -p "$ORIGINAL_MAC_IFACE" >/dev/null 2>&1
             sudo ip link set dev "$ORIGINAL_MAC_IFACE" up
         fi
+    fi
+
+    # The Silencer: Clean surgical occurrences from system auth logs
+    echo -e "${DARK_GRAY}[*] Scrubbing host syslog / auth traces...${NC}"
+    sudo sed -i '/deadshot/d' /var/log/auth.log 2>/dev/null
+    sudo sed -i '/deadshot/d' /var/log/syslog 2>/dev/null
+    
+    # Destroys the volatile tmpfs RAM mount
+    if mountpoint -q "$TOOLS_DIR"; then
+        sudo umount "$TOOLS_DIR" 2>/dev/null
     fi
     
     echo -e "${DARK_GRAY}[+] Operations concluded cleanly. Exit.${NC}"
@@ -138,11 +160,15 @@ if ! command -v whiptail >/dev/null; then
 fi
 
 mkdir -p "$TOOLS_DIR"
+# Force mounting Tools as RAM disk
+if ! mountpoint -q "$TOOLS_DIR"; then
+    sudo mount -t tmpfs -o size=2G tmpfs "$TOOLS_DIR" 2>/dev/null
+fi
 
 prepare_tools_dir() {
     clear
     if ! cd "$TOOLS_DIR"; then
-        echo -e "${RED}[!] Critical error: Tools directory unavailable.${NC}"
+        echo -e "${RED}[!] Critical error: Tools RAM-Disk unavailable.${NC}"
         sleep 2
         return 1
     fi
@@ -257,7 +283,12 @@ run_nuclei() {
     prepare_tools_dir || return
     read -p "Target IP/Domain (https://example.com): " tg
     if ! sanitize_input "$tg"; then echo -e "${RED}[!] Invalid input.${NC}"; pause_menu; return; fi
-    if command -v nuclei >/dev/null; then nuclei -u "$tg"; else echo -e "${RED}[!] Nuclei not found.${NC}"; fi
+    if command -v nuclei >/dev/null; then
+        # Evasion Tactics: Rate limiting and Random User-Agent
+        nuclei -u "$tg" -rl 150 -H "User-Agent: $RANDOM_UA"
+    else 
+        echo -e "${RED}[!] Nuclei not found.${NC}"
+    fi
     pause_menu
 }
 
@@ -302,7 +333,12 @@ run_ffuf() {
     prepare_tools_dir || return
     read -p "Target URL ending with FUZZ (e.g., http://example.com/FUZZ): " fz_site
     read -p "Directory wordlist path: " dir_w
-    if command -v ffuf >/dev/null; then ffuf -w "$dir_w" -u "$fz_site" -c; else echo -e "${RED}[!] Ffuf not found.${NC}"; fi
+    if command -v ffuf >/dev/null; then 
+        # Tactic JITTER: Obfuscates timing and signatures to bypass WAF logic loops
+        ffuf -w "$dir_w" -u "$fz_site" -H "User-Agent: $RANDOM_UA" -p "$JITTER_SEC" -c
+    else 
+        echo -e "${RED}[!] Ffuf not found.${NC}"
+    fi
     pause_menu
 }
 
@@ -418,10 +454,10 @@ run_live_intel() {
     PROXY_URL="socks5h://127.0.0.1:9050"
     
     echo -e "${RED}\n[=] RECENT CVE EXPLOITS (GITHUB):${NC}"
-    curl -x "$PROXY_URL" -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" "https://api.github.com/search/repositories?q=CVE-2024&sort=updated&order=desc" 2>/dev/null | jq -r '.items[0:3] | " [X] \(.name): \(.description)"'
+    curl -x "$PROXY_URL" -s -H "User-Agent: $RANDOM_UA" "https://api.github.com/search/repositories?q=CVE-2024&sort=updated&order=desc" 2>/dev/null | jq -r '.items[0:3] | " [X] \(.name): \(.description)"'
     
     echo -e "${RED}\n[=] ACTIVE PUBLIC BUG BOUNTIES:${NC}"
-    curl -x "$PROXY_URL" -s "https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/main/data/hackerone_data.json" 2>/dev/null | jq -r '.[0:3] | " [+] \(.url)"'
+    curl -x "$PROXY_URL" -s -H "User-Agent: $RANDOM_UA" "https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/main/data/hackerone_data.json" 2>/dev/null | jq -r '.[0:3] | " [+] \(.url)"'
     
     echo -e "\n${DARK_GRAY}[+] Intel gathering complete.${NC}"
     pause_menu
