@@ -106,17 +106,19 @@ class DeadshotUI(App):
         with Horizontal():
             with Vertical(id="sidebar"):
                 yield Label("TACTICAL PHASES", classes="category_title")
-                list_view = ListView(id="categories")
-                for cat in TOOLS.keys():
-                    item = ListItem(Label(cat))
-                    item.cat_name = cat
-                    list_view.append(item)
-                yield list_view
+                yield ListView(id="categories")
             with Vertical(id="content_area"):
                 yield Label("DEADSHOT TOOLS V7", classes="tool_title", id="current_tool_title")
                 yield Label("Select an operation phase from the sidebar to arm tools.", classes="tool_desc", id="current_tool_desc")
                 yield ListView(id="tool_list")
         yield Footer()
+
+    def on_mount(self) -> None:
+        list_view = self.query_one("#categories", ListView)
+        for cat in TOOLS.keys():
+            item = ListItem(Label(cat))
+            item.cat_name = cat
+            list_view.append(item)
 
     def action_back_to_menu(self):
         self.query_one("#categories").focus()
