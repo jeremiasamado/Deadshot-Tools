@@ -492,6 +492,16 @@ clean_tools_dir() {
 }
 
 # ==========================================
+# BLUE TEAM: ACTIVE DEFENSE SHIELD
+# ==========================================
+run_shield() {
+    clear
+    echo -e "${DARK_GRAY}[*] Launching Deadshot Shield (Active Defense)...${NC}"
+    bash "$SCRIPT_DIR/deadshot_shield.sh"
+    pause_menu
+}
+
+# ==========================================
 # LOCAL AI ASSISTANT & LIVE INTEL
 # ==========================================
 run_ai_assistant() {

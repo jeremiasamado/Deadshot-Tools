@@ -55,6 +55,9 @@ TOOLS = {
         ("Seeker", "run_seeker", "Precise GPS location harvesting tricking target browsers."),
         ("Auto-Tor IP", "run_torproxy", "Rotate proxies dynamically across system layers.")
     ],
+    "Blue Team Shield": [
+        ("Activate Shield", "run_shield", "Real-time SSH watchdog + AI threat analysis + Honeypot taunt page. Blocks attackers and humiliates them.")
+    ],
     "Core Config": [
         ("Install Requirements", "run_requisitos", "Bootstrap all Kali packages & libraries securely."),
         ("Purge Sandbox", "clean_tools_dir", "Delete the Tools directory and wipe installation traces.")
