@@ -9,9 +9,11 @@ from textual.binding import Binding
 from textual.screen import Screen
 
 TOOLS = {
-    "AI Assistant & Intel": [
-        ("Ollama Offline Oracle", "run_ai_assistant", "Spawns the Dolphin-Phi offline Red Team assistant for unhinged exploit generation."),
-        ("Live Vulnerability Intel", "run_live_intel", "Tor-proxied OSINT gathering for active CVEs and bounties on GitHub/HackerOne.")
+    "AI Red Team Assistant": [
+        ("Ollama Offline Oracle", "run_ai_assistant", "Local uncensored AI that analyzes your attack reports and suggests next moves. Runs 100% offline.")
+    ],
+    "Live Threat Intel": [
+        ("CVE & Bounty Feed", "run_live_intel", "Tor-proxied OSINT feed pulling fresh CVE exploits and active bug bounties from GitHub/HackerOne.")
     ],
     "OSINT & Footprinting": [
         ("Amass", "run_amass", "OWASP Subdomain Mapping. Extracts hidden subdomains for corporate targets."),
@@ -215,7 +217,8 @@ class DeadshotUI(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        self.push_screen(BootScreen())
+        self.install_screen(BootScreen(), name="boot")
+        self.push_screen("boot")
         list_view = self.query_one("#categories", ListView)
         for cat in TOOLS.keys():
             item = ListItem(Label(cat))
