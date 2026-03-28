@@ -28,7 +28,7 @@ Getting started is simple. Open your terminal and run:
 
 ---
 
-# Deadshot Tools (Versão Português - PT)
+# Deadshot Tools - PT
 
 Este projeto é um hub otimizado e altamente estável que criei para agrupar as ferramentas reais de cibersegurança no Kali Linux. Desde phishing e recolha de inteligência (OSINT) a frameworks de ataque, organizei tudo de forma segura numa única interface de linha de comandos.
 
