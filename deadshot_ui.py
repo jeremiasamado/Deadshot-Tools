@@ -1,10 +1,12 @@
 import os
 import sys
 import subprocess
+import asyncio
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
-from textual.widgets import Header, Footer, ListView, ListItem, Label
+from textual.containers import Horizontal, Vertical, Center
+from textual.widgets import Header, Footer, ListView, ListItem, Label, ProgressBar, Static
 from textual.binding import Binding
+from textual.screen import Screen
 
 TOOLS = {
     "AI Assistant & Intel": [
@@ -57,8 +59,95 @@ TOOLS = {
     ]
 }
 
+BOOT_PHASES = [
+    ("Wiping bash_history traces", 10),
+    ("Purging RAM caches", 20),
+    ("Detecting network interface", 30),
+    ("Spoofing MAC address", 50),
+    ("Initializing Tor tunnel", 70),
+    ("Loading User-Agent rotation", 85),
+    ("Arming tactical dashboard", 95),
+    ("OPSEC PROTOCOL ARMED", 100),
+]
+
+# ==========================================
+# BOOT SCREEN (Loading / Splash)
+# ==========================================
+class BootScreen(Screen):
+    CSS = """
+    BootScreen {
+        background: #000000;
+        align: center middle;
+    }
+    #boot_container {
+        width: 70;
+        height: auto;
+        padding: 2 4;
+        border: solid #660000;
+        background: #0a0a0a;
+        align: center middle;
+    }
+    #boot_ascii {
+        color: #ff3333;
+        text-align: center;
+        text-style: bold;
+        padding-bottom: 1;
+    }
+    #boot_version {
+        color: #555555;
+        text-align: center;
+        padding-bottom: 1;
+    }
+    #boot_status {
+        color: #888888;
+        text-align: center;
+        padding: 1;
+    }
+    ProgressBar {
+        padding: 0 4;
+    }
+    Bar > .bar--bar {
+        color: #ff3333;
+    }
+    Bar > .bar--complete {
+        color: #cc0000;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Center():
+            with Vertical(id="boot_container"):
+                yield Static(
+                    "  ____  _________    ____  _____ __  ______  ______\n"
+                    " / __ \\/ ____/   |  / __ \\/ ___// / / / __ \\/_  __/\n"
+                    "/ / / / __/ / /| | / / / /\\__ \\/ /_/ / / / / / /   \n"
+                    "/ /_/ / /___/ ___ |/ /_/ /___/ / __  / /_/ / / /    \n"
+                    "/_____/_____/_/  |_/_____//____/_/ /_/\\____/ /_/     ",
+                    id="boot_ascii"
+                )
+                yield Static("[ D E A D S H O T   T O O L S   V 9 ]", id="boot_version")
+                yield ProgressBar(total=100, show_eta=False, id="boot_progress")
+                yield Static("[*] Initializing OPSEC protocols...", id="boot_status")
+
+    async def on_mount(self) -> None:
+        progress = self.query_one("#boot_progress", ProgressBar)
+        status = self.query_one("#boot_status", Static)
+
+        for phase_text, phase_pct in BOOT_PHASES:
+            status.update(f"[*] {phase_text}...")
+            progress.update(progress=phase_pct)
+            await asyncio.sleep(0.6)
+
+        status.update("[+] ALL SYSTEMS ARMED. ENTERING DASHBOARD...")
+        await asyncio.sleep(0.8)
+        self.app.pop_screen()
+
+
+# ==========================================
+# MAIN DASHBOARD
+# ==========================================
 class DeadshotUI(App):
-    TITLE = "DEADSHOT TACTICAL O.S. (V7)"
+    TITLE = "DEADSHOT TACTICAL O.S. (V9)"
     CSS = """
     Screen {
         background: #000000;
@@ -107,12 +196,12 @@ class DeadshotUI(App):
         text-align: center;
     }
     """
-    
+
     BINDINGS = [
         Binding("q", "quit", "Quit Framework"),
         Binding("escape", "back_to_menu", "Back to Phases")
     ]
-    
+
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal():
@@ -120,12 +209,13 @@ class DeadshotUI(App):
                 yield Label("TACTICAL PHASES", classes="category_title")
                 yield ListView(id="categories")
             with Vertical(id="content_area"):
-                yield Label("DEADSHOT TOOLS V7", classes="tool_title", id="current_tool_title")
+                yield Label("DEADSHOT TOOLS V9", classes="tool_title", id="current_tool_title")
                 yield Label("Select an operation phase from the sidebar to arm tools.", classes="tool_desc", id="current_tool_desc")
                 yield ListView(id="tool_list")
         yield Footer()
 
     def on_mount(self) -> None:
+        self.push_screen(BootScreen())
         list_view = self.query_one("#categories", ListView)
         for cat in TOOLS.keys():
             item = ListItem(Label(cat))
@@ -140,27 +230,27 @@ class DeadshotUI(App):
             cat_name = getattr(event.item, "cat_name", "")
             tool_list = self.query_one("#tool_list", ListView)
             tool_list.clear()
-            
+
             self.query_one("#current_tool_title", Label).update(f"PHASE: {cat_name}")
             self.query_one("#current_tool_desc", Label).update("Select a specific cyber weapon to execute.")
-            
+
             for tool_name, bash_cmd, desc in TOOLS.get(cat_name, []):
                 item = ListItem(Label(tool_name))
                 item.bash_cmd = bash_cmd
                 item.desc = desc
                 item.tool_name = tool_name
                 tool_list.append(item)
-                
+
             tool_list.focus()
-            
+
         elif event.list_view.id == "tool_list":
             tool_name = getattr(event.item, "tool_name", "")
             bash_cmd = getattr(event.item, "bash_cmd", "")
             desc = getattr(event.item, "desc", "")
-            
+
             self.query_one("#current_tool_title", Label).update(f"/// OP: {tool_name} ///")
             self.query_one("#current_tool_desc", Label).update(f"{desc}")
-            
+
             # Suspend the cool UI to drop back to the standard bash hacker terminal
             with self.suspend():
                 subprocess.run(["clear"], check=False)
@@ -169,7 +259,7 @@ class DeadshotUI(App):
                     subprocess.run(["sudo", "./deadshot.sh", bash_cmd], check=True)
                 except subprocess.CalledProcessError:
                     print(f"\033[1;30m[*] Tactic interrupted or failed.\033[0m")
-            
+
             # Re-focus the menu when Bash returns
             self.query_one("#categories").focus()
 

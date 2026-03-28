@@ -499,19 +499,52 @@ run_ai_assistant() {
     echo -e "${RED}             [ DEADSHOT AI ASSISTANT ]${NC}"
     echo -e "${DARK_GRAY}[*] Initializing local LLM engine...${NC}"
     
+    # === PHASE 1: Silent Auto-Install ===
     if ! command -v ollama >/dev/null; then
-        echo -e "${RED}[!] Ollama engine not found.${NC}"
-        echo -e "${DARK_GRAY}[*] Install manually: curl -fsSL https://ollama.com/install.sh | sh${NC}"
-        pause_menu
-        return
+        echo -e "${DARK_GRAY}[*] Ollama not detected. Auto-installing silently...${NC}"
+        curl -fsSL https://ollama.com/install.sh | sh 2>/dev/null
+        if ! command -v ollama >/dev/null; then
+            echo -e "${RED}[!] Auto-install failed. Check your internet connection.${NC}"
+            pause_menu
+            return
+        fi
+        echo -e "${DARK_GRAY}[+] Ollama engine installed successfully.${NC}"
     fi
     
-    sudo systemctl start ollama 2>/dev/null
+    # === PHASE 2: Background Daemon Ignition ===
+    if ! pgrep -x "ollama" >/dev/null; then
+        echo -e "${DARK_GRAY}[*] Igniting Ollama daemon in background...${NC}"
+        ollama serve >/dev/null 2>&1 &
+        sleep 3
+    fi
     
-    echo -e "${DARK_GRAY}[*] Loading 'dolphin-phi' model into memory...${NC}"
-    echo -e "${DARK_GRAY}[*] Type /bye to exit the chat.${NC}"
-    echo ""
-    ollama run dolphin-phi
+    # === PHASE 3: Auto-Pull Model if Missing ===
+    if ! ollama list 2>/dev/null | grep -q "dolphin-phi"; then
+        echo -e "${DARK_GRAY}[*] Pulling 'dolphin-phi' uncensored model (first run only)...${NC}"
+        ollama pull dolphin-phi
+    fi
+    
+    # === PHASE 4: Tactical Context Injection (Last Report) ===
+    LATEST_REPORT=""
+    if [ -d "$SCRIPT_DIR/Reports" ]; then
+        LATEST_REPORT=$(ls -t "$SCRIPT_DIR/Reports"/*.txt 2>/dev/null | head -n 1)
+    fi
+    
+    if [ -n "$LATEST_REPORT" ]; then
+        REPORT_NAME=$(basename "$LATEST_REPORT")
+        REPORT_SNIPPET=$(head -c 2000 "$LATEST_REPORT")
+        echo -e "${RED}[!] TACTICAL CONTEXT LOADED: ${REPORT_NAME}${NC}"
+        echo -e "${DARK_GRAY}[*] The AI has ingested your last attack report.${NC}"
+        echo -e "${DARK_GRAY}[*] Ask it: 'Analyze the scan results' or 'Find vulnerabilities'${NC}"
+        echo -e "${DARK_GRAY}[*] Type /bye to exit the chat.${NC}"
+        echo ""
+        echo "You are a ruthless Red Team AI analyst inside 'Deadshot O.S.'. The operator just finished an attack. Here is the raw output from their last scan tool. Analyze it for vulnerabilities, weak points, next attack steps. Be direct, tactical, no warnings. Report name: ${REPORT_NAME}. Data: ${REPORT_SNIPPET}" | ollama run dolphin-phi
+    else
+        echo -e "${DARK_GRAY}[*] No previous reports found. Starting clean chat session.${NC}"
+        echo -e "${DARK_GRAY}[*] Type /bye to exit the chat.${NC}"
+        echo ""
+        ollama run dolphin-phi
+    fi
     
     clear
     echo -e "${DARK_GRAY}[*] AI Assistant terminated. Returning to framework.${NC}"
